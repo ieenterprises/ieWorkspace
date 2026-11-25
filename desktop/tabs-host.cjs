@@ -86,7 +86,7 @@ function createTabHost({BrowserWindow,WebContentsView,ipcMain,registry,session,r
    minimized:window.isMinimized?.()===true,fullScreen:window.isFullScreen?.()===true,visible:window.isVisible?.()!==false,focused:window.isFocused?.()!==false};
  }
  function construct(frame,placement,hidden=false){
-  return new BrowserWindow({width:1360,height:960,...placement?.bounds,...frame.windowOptions,...(hidden?{show:false}:{}),title:'ElixirOffice',webPreferences:{session,sandbox:true,contextIsolation:true,nodeIntegration:false,webSecurity:true,webviewTag:false,preload:path.join(root,'tabs-preload.cjs')}});
+  return new BrowserWindow({width:1360,height:960,...placement?.bounds,...frame.windowOptions,...(hidden?{show:false}:{}),title:'ieWorkspace',webPreferences:{session,sandbox:true,contextIsolation:true,nodeIntegration:false,webSecurity:true,webviewTag:false,preload:path.join(root,'tabs-preload.cjs')}});
  }
  function bindWindow(owner,window){
   window.webContents.setWindowOpenHandler(()=>({action:'deny'}));

@@ -24,7 +24,7 @@
   document.querySelector('#tab-bar').hidden=!compact&&(state.openInTabs===false||state.stripVisible===false);
   list.hidden=compact&&(!state.openInTabs||!state.stripVisible);
   single.hidden=!compact||state.openInTabs&&state.stripVisible;single.dataset.hasDocument=String(!!active?.name);
-  document.querySelector('#single-name').textContent=String(active?.name||'ElixirOffice').replace(/[\u0000-\u001f\u007f\u061c\u200e\u200f\u202a-\u202e\u2066-\u2069]/g,'');
+  document.querySelector('#single-name').textContent=String(active?.name||'ieWorkspace').replace(/[\u0000-\u001f\u007f\u061c\u200e\u200f\u202a-\u202e\u2066-\u2069]/g,'');
   document.querySelector('#single-dirty').textContent=active?.dirty?'●':'';
   const type=/\.pdf$/i.test(active?.name||'')?'pdf':/\.(xlsx|xls|ods|csv|xltx|xlsm)$/i.test(active?.name||'')?'cell':/\.(pptx|ppt|odp|potx|ppsx)$/i.test(active?.name||'')?'slide':'word';
   const icon=single.querySelector('svg');icon.setAttribute('class','document-icon t-'+type);icon.querySelector('use').setAttribute('href','/example/local-assets/desktop-home/icons.svg#i-'+type);
@@ -93,7 +93,7 @@
  window.eoTabs.onState(state=>{if(!initialized){if(!pendingState||state.revision>=pendingState.revision)pendingState=state;return;}render(state);});
  window.eoTabs.initial().then(value=>{
   strings=value.strings;document.documentElement.lang=value.language;document.dir=value.direction;
-  if(home){const homeTab=strings.homeTab||'ElixirOffice start page';home.title=homeTab;home.setAttribute('aria-label',homeTab);} // #95: icon-only tab, like Microsoft Office
+  if(home){const homeTab=strings.homeTab||'ieWorkspace start page';home.title=homeTab;home.setAttribute('aria-label',homeTab);} // #95: icon-only tab, like Microsoft Office
   dismiss.setAttribute('aria-label',strings.close||'Close');
   move.title=strings.tabMove;move.setAttribute('aria-label',strings.tabMove);
   list.setAttribute('aria-label',strings.tabsLabel);add.title=strings.tabNew;add.setAttribute('aria-label',strings.tabNew);initialized=true;render(pendingState&&pendingState.revision>value.state.revision?pendingState:value.state);

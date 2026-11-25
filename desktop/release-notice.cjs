@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 'use strict';
 const DAY=24*60*60*1000,TIMEOUT_MS=8000,MAX_BYTES=512*1024;
-const API_URL='https://api.github.com/repos/leag1234/elixiroffice/releases?per_page=20';
-const PAGE='https://github.com/leag1234/elixiroffice/releases/tag/';
+const API_URL='https://api.github.com/repos/ieenterprises/ieWorkspace/releases?per_page=20';
+const PAGE='https://github.com/ieenterprises/ieWorkspace/releases/tag/';
 function parseVersion(value){
  if(typeof value!=='string'||value.length>128)return null;
  const m=/^v?(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?(?:\+([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$/.exec(value);
@@ -31,7 +31,7 @@ function validReleaseURL(value){
   if(url.protocol!=='https:'||url.host!=='github.com'||url.username||url.password||url.search||url.hash)return null;
   // GitHub treats owner/repo case-insensitively (the repository was renamed to
   // leag1234/ElixirOffice); match that, but always emit the canonical PAGE form.
-  const prefix='/leag1234/elixiroffice/releases/tag/';
+  const prefix='/ieenterprises/ieworkspace/releases/tag/';
   if(!url.pathname.toLowerCase().startsWith(prefix))return null;
   const tag=decodeURIComponent(url.pathname.slice(prefix.length));
   return parseVersion(tag)?PAGE+encodeURIComponent(tag):null;
@@ -63,7 +63,7 @@ function fetchReleases({request=require('node:https').request,signal,timeout=TIM
   try{
    req=request(API_URL,{method:'GET',agent:false,headers:{
     Accept:'application/vnd.github+json','Accept-Encoding':'identity',
-    'User-Agent':'ElixirOffice release check','X-GitHub-Api-Version':'2026-03-10'
+    'User-Agent':'ieWorkspace release check','X-GitHub-Api-Version':'2026-03-10'
    }},res=>{
     response=res;
     if(settled){res.destroy();return;}

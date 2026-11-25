@@ -4,6 +4,6 @@ module.exports=Object.freeze({
  "displayLanguageHeading": "Language",
  "displayLanguage": "Display language",
  "displayLanguageSystem": "Use system language",
- "displayLanguageRestart": "Restart ElixirOffice to apply.",
+ "displayLanguageRestart": "Restart ieWorkspace to apply.",
  "displayLanguageRestartNow": "Restart now"
 });

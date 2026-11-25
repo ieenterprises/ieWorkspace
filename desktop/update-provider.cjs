@@ -5,7 +5,7 @@
 const {readCandidate}=require('./update-candidate.cjs');
 function refused(){throw Error('Verified update provider refused');}
 function capable(policy,runtime){if(!policy?.capability(runtime).enabled)refused();}
-function assetURL(tag,name){return new URL('https://github.com/leag1234/elixiroffice/releases/download/'+encodeURIComponent(tag)+'/'+encodeURIComponent(name));}
+function assetURL(tag,name){return new URL('https://github.com/ieenterprises/ieWorkspace/releases/download/'+encodeURIComponent(tag)+'/'+encodeURIComponent(name));}
 function createVerifiedProvider({Provider,policy,runtime,now=Date.now}){
  const target=Object.freeze({...runtime});capable(policy,target);
  if(typeof Provider!=='function')refused();

@@ -16,7 +16,7 @@ function named(t,key,name,platform=process.platform){
 function unsaved(t,close=false,name='',platform=process.platform){
  // NSAlert places the first button at the trailing edge: Save, Cancel, Don't Save.
  const actions=close?(platform==='darwin'?['quitSave','cancel','dontSave']:['quitSave','dontSave','cancel']):['cancel','dontSave'];
- return {type:'question',title:'ElixirOffice',message:named(t,close?'saveChangesNamed':'closeWithoutSavingNamed',name,platform),
+ return {type:'question',title:'ieWorkspace',message:named(t,close?'saveChangesNamed':'closeWithoutSavingNamed',name,platform),
   buttons:buttons(actions.map(key=>t(key))),normalizeAccessKeys:true,noLink:true,defaultId:0,cancelId:actions.indexOf('cancel')};
 }
 function busy(t,name){

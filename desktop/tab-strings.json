@@ -22,7 +22,7 @@
   "showHomeTab": "Show Home tab",
   "hardwareAcceleration": "Use hardware graphics acceleration (restart required)",
   "hardwareAccelerationNote": "Turn off if the window flickers or trembles.",
-  "hardwareAccelerationRestart": "Restart ElixirOffice for this change to take effect.",
+  "hardwareAccelerationRestart": "Restart ieWorkspace for this change to take effect.",
   "graphicsOn": "On",
   "graphicsOff": "Off",
   "homeTabRequiresTabs": "The Home tab is available when documents open in tabs.",
