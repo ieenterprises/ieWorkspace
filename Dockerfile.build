@@ -60,5 +60,17 @@ RUN set -e; \
     chmod -R a+rX /var/www/elixiroffice/ieworkspace-brand
 
 # 4. Start page config (appName: ieWorkspace) and nginx branding overlay
+ENV EXAMPLE_ENABLED=true \
+    GENERATE_FONTS=false
+
 COPY deploy/server/example.json /etc/elixiroffice/documentserver-example/local-production-linux.json
 COPY deploy/render/ds-example.conf /etc/nginx/includes/ds-example.conf
+
+# 5. Redirect root "/" directly to ieWorkspace Home (/example/) instead of /welcome/
+RUN set -e; \
+    for f in /etc/elixiroffice/documentserver/nginx/includes/ds-docservice.conf /etc/nginx/includes/ds-docservice.conf; do \
+      [ -f "$f" ] && sed -i 's|/welcome/|/example/|g' "$f"; \
+    done; \
+    for f in /var/www/elixiroffice/documentserver-example/welcome/docker.html /var/www/elixiroffice/documentserver-example/welcome/example-disabled.html; do \
+      [ -f "$f" ] && sed -i 's/ElixirOffice/ieWorkspace/g' "$f"; \
+    done
