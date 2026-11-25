@@ -10,6 +10,7 @@ COPY branding/example/nodejs/public/elixir/brand/logo.svg \
      branding/example/nodejs/public/elixir/brand/icon-192.png \
      branding/example/nodejs/public/elixir/brand/icon-512.png \
      branding/example/nodejs/public/elixir/brand/icon-maskable-512.png \
+     branding/example/nodejs/public/elixir/brand/download-menu.js \
      /var/www/elixiroffice/ieworkspace-brand/
 
 # 2. Editor header, about, embed, and welcome logos (desktop + mobile)
