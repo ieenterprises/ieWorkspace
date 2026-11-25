@@ -1,0 +1,62 @@
+# Render Blueprint for ieWorkspace (Web Service + PostgreSQL + Persistent Disk)
+# Uses the exact same prebuilt image as Git (Dockerfile) and Existing Image deployments.
+databases:
+  - name: ieworkspace-db
+    databaseName: ieworkspace
+    user: ieworkspace
+    plan: basic-256mb
+
+services:
+  - type: web
+    name: ieworkspace
+    runtime: image
+    image:
+      url: ghcr.io/ieenterprises/ieworkspace:main
+    # DocumentServer + converter requires at least 2-4 GB RAM; 'pro' (4 GB) recommended.
+    plan: pro
+    healthCheckPath: /healthcheck
+    disk:
+      name: ieworkspace-data
+      mountPath: /var/www/elixiroffice/Data
+      sizeGB: 20
+    envVars:
+      - key: PORT
+        value: "80"
+      - key: EXAMPLE_ENABLED
+        value: "true"
+      - key: GENERATE_FONTS
+        value: "false"
+      - key: JWT_ENABLED
+        value: "true"
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_HEADER
+        value: Authorization
+      - key: ALLOW_PRIVATE_IP_ADDRESS
+        value: "false"
+      - key: ALLOW_META_IP_ADDRESS
+        value: "false"
+      - key: USE_UNAUTHORIZED_STORAGE
+        value: "false"
+      - key: DB_TYPE
+        value: postgres
+      - key: DB_HOST
+        fromDatabase:
+          name: ieworkspace-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: ieworkspace-db
+          property: port
+      - key: DB_NAME
+        fromDatabase:
+          name: ieworkspace-db
+          property: database
+      - key: DB_USER
+        fromDatabase:
+          name: ieworkspace-db
+          property: user
+      - key: DB_PWD
+        fromDatabase:
+          name: ieworkspace-db
+          property: password

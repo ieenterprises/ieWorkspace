@@ -1,0 +1,20 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+/* Desktop-only additions to the shared Home stylesheet, including its scoped editor copy. */
+.dropzone { width: 100%; }
+.dropzone:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+:root{--eo-module-word:#2B579A;--eo-module-cell:#217346;--eo-module-slide:#C43E1C;--eo-module-pdf:#B30B00}
+:root[data-eo-theme=dark]{--eo-module-word:#5A82C4;--eo-module-cell:#3E9A6B;--eo-module-slide:#E06A4A;--eo-module-pdf:#D94030}
+.tile-blank .thumb{border-inline-start:3px solid var(--eo-module-word)}
+.tile-blank[data-new=xlsx] .thumb{border-inline-start-color:var(--eo-module-cell)}
+.tile-blank[data-new=pptx] .thumb{border-inline-start-color:var(--eo-module-slide)}
+.file-link .ic.t-word{color:var(--eo-module-word)}
+.file-link .ic.t-cell{color:var(--eo-module-cell)}
+.file-link .ic.t-slide{color:var(--eo-module-slide)}
+.file-link .ic.t-pdf{color:var(--eo-module-pdf)}
+.recent-remove{background:none;border:0;border-radius:4px;color:var(--text-2);cursor:pointer;font-size:16px;line-height:1;padding:4px 8px;opacity:0}
+.files tr:hover .recent-remove,.recent-remove:focus-visible{opacity:1}
+.recent-remove:hover{background:var(--hover);color:var(--text)}
+@media (hover:none){.recent-remove{opacity:1}}

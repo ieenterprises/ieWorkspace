@@ -1,0 +1,168 @@
+{
+  "name": "elixiroffice-desktop",
+  "version": "0.9.4",
+  "description": "Local ElixirOffice desktop editors",
+  "main": "main.cjs",
+  "license": "AGPL-3.0-only",
+  "author": "ElixirOffice contributors",
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test ../tests/desktop/*.test.cjs",
+    "package": "electron-builder --linux AppImage --publish never && bash ../tools/desktop/deb.sh",
+    "package:windows": "electron-builder --win nsis --x64",
+    "package:mac": "electron-builder --config ../tools/desktop/mac-config.cjs --mac dmg --arm64",
+    "test:print-viewer": "electron ../tests/desktop/print-viewer-contract.cjs"
+  },
+  "devDependencies": {
+    "electron": "44.11.5",
+    "electron-builder": "26.15.3"
+  },
+  "build": {
+    "appId": "org.elixiroffice.desktop",
+    "productName": "ElixirOffice",
+    "electronVersion": "44.11.5",
+    "asar": true,
+    "files": [
+      "*.cjs",
+      "*.js",
+      "*.html",
+      "*.css",
+      "package.json",
+      "tab-strings.json",
+      "interface-size-strings.json",
+      "icon.png",
+      "build-info.json",
+      "update-cache.yml",
+      "!build-identity-before-pack.cjs",
+      "!qa/**",
+      "!QA-DO-NOT-PUBLISH.json"
+    ],
+    "extraResources": [
+      {
+        "from": "assets",
+        "to": "assets"
+      }
+    ],
+    "directories": {
+      "output": "dist"
+    },
+    "linux": {
+      "target": [
+        "AppImage"
+      ],
+      "category": "Office",
+      "executableName": "elixiroffice",
+      "maintainer": "ElixirOffice contributors",
+      "desktop": {
+        "entry": {
+          "MimeType": "application/vnd.openxmlformats-officedocument.wordprocessingml.document;application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;application/vnd.openxmlformats-officedocument.presentationml.presentation;application/vnd.oasis.opendocument.text;application/vnd.oasis.opendocument.spreadsheet;application/vnd.oasis.opendocument.presentation;application/msword;application/vnd.ms-excel;application/vnd.ms-powerpoint;application/rtf;text/plain;text/markdown;text/csv;application/vnd.openxmlformats-officedocument.wordprocessingml.template;application/vnd.ms-word.document.macroEnabled.12;application/vnd.openxmlformats-officedocument.spreadsheetml.template;application/vnd.ms-excel.sheet.macroEnabled.12;application/vnd.openxmlformats-officedocument.presentationml.template;application/vnd.openxmlformats-officedocument.presentationml.slideshow;"
+        }
+      },
+      "icon": "icon.png",
+      "syncDesktopName": true
+    },
+    "fileAssociations": [
+      {
+        "ext": [
+          "docx",
+          "doc",
+          "docm",
+          "dotx",
+          "odt",
+          "rtf",
+          "txt"
+        ],
+        "name": "ElixirOffice Text Document",
+        "role": "Editor",
+        "icon": "build/doc-icons/eo-doc-text"
+      },
+      {
+        "ext": [
+          "xlsx",
+          "xls",
+          "xlsm",
+          "xltx",
+          "ods",
+          "csv"
+        ],
+        "name": "ElixirOffice Spreadsheet",
+        "role": "Editor",
+        "icon": "build/doc-icons/eo-doc-sheet"
+      },
+      {
+        "ext": [
+          "pptx",
+          "ppt",
+          "potx",
+          "ppsx",
+          "odp"
+        ],
+        "name": "ElixirOffice Presentation",
+        "role": "Editor",
+        "icon": "build/doc-icons/eo-doc-slides"
+      },
+      {
+        "ext": [
+          "pdf"
+        ],
+        "name": "PDF document",
+        "role": "Editor",
+        "icon": "build/doc-icons/eo-doc-pdf"
+      },
+      {
+        "ext": [
+          "md",
+          "markdown"
+        ],
+        "name": "Markdown document",
+        "role": "Editor",
+        "icon": "build/doc-icons/eo-doc-markdown"
+      }
+    ],
+    "win": {
+      "target": "nsis",
+      "signExecutable": false,
+      "icon": "icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    },
+    "mac": {
+      "target": "dmg",
+      "category": "public.app-category.productivity",
+      "icon": "../tools/desktop/artwork/mac-icon.icns",
+      "identity": null,
+      "hardenedRuntime": true,
+      "notarize": false,
+      "extraResources": [
+        {
+          "from": "mac-licenses/LICENSE",
+          "to": "LICENSE.electron"
+        },
+        {
+          "from": "mac-licenses/LICENSES.chromium.html",
+          "to": "LICENSES.chromium.html"
+        }
+      ],
+      "entitlements": "entitlements.mac.plist",
+      "entitlementsInherit": "entitlements.mac.plist"
+    },
+    "artifactName": "ElixirOffice-${version}-${os}-${arch}.${ext}",
+    "publish": null,
+    "appImage": {
+      "artifactName": "ElixirOffice-${version}-x86_64.${ext}"
+    },
+    "beforePack": "./build-identity-before-pack.cjs"
+  },
+  "desktopName": "org.elixiroffice.desktop.desktop",
+  "dependencies": {
+    "@elixiroffice/lazy-val-shim": "file:vendor/lazy-val-shim",
+    "electron-updater": "6.8.9"
+  },
+  "overrides": {
+    "electron-updater": {
+      "lazy-val": "file:../../vendor/lazy-val-shim"
+    }
+  }
+}

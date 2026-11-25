@@ -1,0 +1,593 @@
+# Changelog
+
+## Desktop 0.9.4 — published 2026-11-23
+
+- Fix: Ask Elixir answers to questions about the document (no change made) can now be selected with the mouse and have a Copy button before Close (#68).
+- Fix: a long Ask Elixir answer no longer pushes the pop-up past the bottom of the window: the answer scrolls inside the pop-up, and the input field and the buttons stay reachable (#68).
+- Fix: in the desktop app, clicking the file name in the title bar and typing a new name now renames the file; before, the field was disabled and the keystrokes went into the document (#94).
+- Changed: the start page tab of the tab bar shows the ElixirOffice mark with a tooltip instead of the word Home, so it is no longer confused with the Home tab of the ribbon (#95).
+- Changed: printing or exporting a spreadsheet now defaults to the active sheet(s), as in Excel, instead of the whole workbook; the print panel opens at once with "Preparing preview…" while the preview is calculated (#92).
+- Fix: Word pictures converted from WMF/EMF drawings: on screen their lines were drawn as 2 px solid black lines; they are now thin hairlines, as in Word (#61).
+- Fix: spreadsheet AutoFilter on large sheets: the search field understands the * and ? wildcards like Excel, waits for a pause in typing instead of rebuilding the list on every character, and the list shows at most 10,000 values with a "Not all items showing" notice; on a 110,000-row sheet the list now opens in about 3 s instead of 24 s (#99). When the list is capped and every search result stays selected, OK now filters all rows of the column (a "contains" filter built from the search text), not only the first 10,000 values (#99).
+- Fix: the account menu of the title bar: after reopening it, the arrow keys no longer skip entries (#100).
+- Fix: Ask Elixir in Word: Accept and Discard of an AI edit now process only the assistant's own tracked changes, never earlier changes made by other people (#100).
+- Fix (server): the start page shows every pending save warning (conflict copy, failed save) one after the other instead of only the first (#100).
+- Fix (server): Nextcloud: when Document Server retries a final save whose first attempt already succeeded, no false conflict copy is created any more (#100).
+- Fix: Linux (X11): after maximizing or restoring the window, the document area kept the previous window size (cut off or stretched); it now follows the window (#96).
+- Fix: in dark interface themes, the Word Styles gallery previews are dark instead of white rectangles, in the ribbon and in the open gallery (#93).
+- Fix: Ask Elixir in Word: with the cursor simply placed in a bulleted or numbered item (no selection), a request such as "Summarize this document" read only that item; it now reads the whole document, as for any other plain cursor.
+- Fix: Word running heads: a STYLEREF field in a header or footer (for example the current chapter title at the top of each page) now shows the heading of that page, as in Word, instead of an error text.
+- Fix: a Word document with a landscape page between portrait pages, each section with its own header and footer, saved as .odt: the page styles are now given to the first paragraph of each section, so the pages no longer run together and each page keeps its size, orientation, header and footer (a three page test document had become one page; a landscape diagram moved to the next page).
+
+## Desktop 0.9.3 — published 2026-11-19
+
+- Changed: files now have their own document icons per family (text documents, spreadsheets, presentations, PDF, Markdown), in each module colour, instead of the ElixirOffice application icon, on macOS and Windows.
+- Fix: on macOS, Control+click (secondary click with the trackpad) now opens the context menu in documents, spreadsheets and presentations, like a right click with a mouse (#90).
+- Fix: Word character styles (#91): clicking a character style in the Styles pane or the Apply Styles box now applies it to the selection, or to the word at the cursor, instead of doing nothing; Update to Match Selection works for character styles and no longer turns them into paragraph styles; Create New Style from Formatting can create a character style (Style type); the sample of the style dialog follows the dark document mode.
+- Fix: spreadsheets: Ctrl+P, File > Print and Export as PDF opened the File menu Info page instead of the print / PDF export page, because the Print entry was hidden (#87, #69). Documents and presentations already worked.
+- Fix: the print page of documents and presentations no longer shows "Waiting for printers" forever (#92): it lists the system printers (default first), or shows "Printers not found" when there are none or the print system does not answer.
+- Fix: Linux: no more crash report at every launch when libspeechd is installed without the speech-dispatcher daemon (#89). Read Aloud is only enabled when the daemon is installed or running.
+- Fix: manual line breaks (Shift+Enter) were removed when an .odt file was saved.
+- Fix: headings in an .odt file opened one level too deep and moved down one more level at every save.
+- Fix: links that LibreOffice opens in a new window lost their first character (https:// became #ttps://) when an .odt file was opened.
+- Fix: comments in an .odt file (author, date, text and the commented range) were dropped when the file was saved; they are kept now, and so are comments typed without a text selection.
+- Fix: an .odt file whose text switches page style (a landscape page between portrait pages) opens with the page break and the page size of each page instead of running on one page, and text sections with columns keep their columns when the file is opened and saved.
+- New page: [OpenDocument support](docs/opendocument.md), what is kept, changed or lost when ElixirOffice saves .odt, .ods and .odp files.
+- Fix: spreadsheets and presentations no longer use more and more memory with every edit, undo, redo and paste. A large workbook with a chart could reach 4 GB and crash after about a quarter of an hour of editing.
+- Split view: the mouse now selects text in the lower pane (click, double click for a word, triple click for a paragraph, Shift+click, drag with automatic scrolling), and the selection is shown there.
+- Chinese and Japanese documents: the East Asian document grid (lines and characters per page) is laid out like Word, so pages break where Word breaks them (#39). The grid settings survive open and save.
+- Corrected line heights for MS Gothic, MS Mincho, PMingLiU and Yu fonts when they are substituted.
+- Pictures converted from WMF/EMF drawings: lines are drawn at Word's thickness, finer on screen and visible (0.14 pt) in the PDF export (#61).
+- A picture placed in the paragraph after a text paragraph no longer pushes that paragraph's last line below it (#61).
+- Saving a .docx keeps the compatibility setting for table style font size and justification, so older files keep their table text size in Word (#66).
+- Chinese and Japanese text in a substituted font uses the line height Word uses for the requested font (SimSun, MS Mincho, Microsoft YaHei...), so pages break closer to Word (#39).
+- Performance: document tabs that are not in front and not doing anything now stop running in the background, so many open documents no longer use CPU when idle (about 8 open documents went from 13% to 2% of one CPU core while idle in our Linux test). A tab that is saving, exporting, printing, recovering or being closed is never slowed down. Set ELIXIROFFICE_NO_TAB_THROTTLE=1 to turn this off.
+- Word Pages pane: only the page thumbnails near the visible area are drawn; thumbnails far away free their memory (large documents open the pane faster and use less memory).
+- AutoRecover no longer re-converts and rewrites an unsaved document every minute when nothing changed since its last recovery copy (less CPU and disk use on large documents left open).
+- Fix: on macOS, Word bullets (the standard Symbol bullet) no longer show as empty boxes. macOS has its own Symbol font without the symbol characters Word uses; it is no longer used for them.
+- Fix: in AI settings, Test connection now works before you click Save (it saves the form first); it said the AI was not configured.
+- Local AI on another machine of your network (#43): plain HTTP is now accepted for private-network hosts (192.168.x.x, 10.x.x.x, 172.16-31.x.x, link-local, `*.local`, `*.lan`, `*.home.arpa`), with a clear warning that the connection is not encrypted. Public hosts still need HTTPS.
+- Fix: the AI connection now trusts certificate authorities installed in the operating system (for example a private CA behind Caddy or nginx on your LAN, #43); it only trusted its bundled list and failed with "AI endpoint unavailable". Certificate verification is never switched off, and an untrusted certificate now gets its own message.
+- Local AI servers (Ollama, LM Studio, llama.cpp, #68): re-checked and covered by tests (named tool choice rejected by LM Studio, tool calls written as `<tool_call>` blocks, endpoint without `/v1`), and the new docs section "Local AI" lists the endpoints and the 16K context minimum.
+- New option "Show Quick Access Toolbar" (#81, also for #23 and #64): turn it off to hide the quick access buttons (Save, Undo, Redo, Print, ...) and the AutoSave switch in Word, Excel, PowerPoint and PDF; the title row becomes 8 pixels shorter and keeps the file name, the search box and the account button. Right-click the quick access toolbar or the ribbon tab row (Hide / Show Quick Access Toolbar) or use Options > Window; the choice is saved and applies at once to every open document, window and tab.
+
+## Desktop 0.9.2 — published 2026-11-17
+
+- Fix: Export as PDF, Save As PDF and Print opened the Info page instead of the print and PDF panel in Word documents on Linux and Windows (#87).
+- Fix: on Linux, saving to a mounted Windows disk (NTFS, FAT) no longer fails with "the file is open elsewhere or cannot be replaced" (#88).
+
+## Desktop 0.9.1 — published 2026-11-16
+
+- Fix: starting the application with several files at once (command line, or a file manager opening several documents when the application is not running) no longer shows "Error" in the first window; every file opens in its own window.
+- Fix: an Excel workbook whose modern charts (waterfall, sunburst, treemap, ...) read their data from another sheet no longer loses the sheets after the chart sheet when opened, and so no longer loses them on save.
+- Fix: Chart Design Quick Layout is one undo step in Word and PowerPoint (it took up to four), like Add Chart Element, Change Colors and Chart Styles.
+- Fix: the Word Chart Styles gallery shows its previews (it was empty).
+- Fix: French (and any non-English) Markdown and text documents no longer show nearly every word as a spelling error. A spell check answer for the language used before the document language was set at open was applied to the new language; such stale answers are now ignored (since 0.7.0).
+- Fix: update notices and signed updates no longer stop when the letter case of the GitHub repository name changes (this happened for a few days before 0.9.0): release links are matched regardless of case and always opened in canonical form.
+
+## Desktop 0.9.0 — published 2026-11-16
+
+### Word
+
+- Word Sort: Home > Paragraph and Table Layout > Data have a Sort button that sorts paragraphs or table rows by text, number or
+  date, on up to three keys, in one undo step.
+- Review has the Word proofing layout: a big Spelling button with Thesaurus and Word Count next to it. The Thesaurus button opens
+  the synonyms pane (Shift+F7).
+- Read Aloud (Review > Speech, Ctrl+Alt+Space) reads the selection, or the document from the cursor, with the voices of the
+  operating system, with Pause, Stop, speed and voice. The sentence being read is highlighted and kept in view; nothing is
+  written to the document. It starts from the beginning of the document when no text follows the cursor.
+- The Word Count dialog closes with its Close button (#82).
+- Pictures anchored to a paragraph inside a column that ends with an empty paragraph are drawn where Word draws them, not at the
+  bottom of the page (#57).
+- Split view: the lower pane has a dark page in the dark theme, the application scrollbar and a visible caret; clicking or typing
+  in it no longer scrolls the upper pane (#85). Limitation: the mouse cannot select text in the lower pane yet.
+
+### Excel
+
+- The Review tab follows Excel: a big Spelling button (opens the spell checking pane, like F7) with Thesaurus and Workbook
+  Statistics (worksheets, cells with data, formulas, tables, PivotTables, charts, pictures, shapes, comments); Comments has
+  Previous, Next and Show Comments. Previous and Next Comment select the commented cell and scroll to it.
+- PivotTable Analyze has Group Selection, Ungroup and Group Field buttons (dates by days, months, quarters, years; numbers by ranges; items by hand).
+
+### PowerPoint
+
+- Table Design and Layout tabs follow PowerPoint: Draw Borders (pen weight, pen colour, border presets), Cell Size, Text
+  Direction and Cell Margins.
+- Design > Variants has Fonts (the Office pairs of theme fonts) and Background Styles (12 solid and gradient styles of the theme
+  colours, applied to all slides).
+- A table with No Border is saved without lines and reopens without lines; before, it came back with default-coloured borders.
+
+### Word and PowerPoint
+
+- Shape Format has a WordArt Styles group: Quick Styles, Text Fill, Text Outline and Text Effects (Transform).
+
+### Charts
+
+- Chart Design ribbon in Word, Excel and PowerPoint: Add Chart Element, Quick Layout, Change Colors and Chart Styles.
+- Office 2016 charts: the waterfall legend lists Increase, Decrease and Total, and the bars use the same colours; funnel labels
+  are white on the bars; titles of these charts are no longer bold, as in Office.
+
+### Home
+
+- The Recent list of File > Home scrolls while a document is open, with the mouse wheel and the keyboard, and so does File > Open (#83).
+- The Modified column of the Recent list shows the date of each document (it showed "[object HTMLButtonElement]"); the remove
+  button has its own column (#83).
+
+### Linux
+
+- New option "Use hardware graphics acceleration (restart required)" in Settings. Turn it off if the window flickers or
+  trembles while scrolling or dragging (seen on Wayland with some graphics drivers, #84). It can also be turned off with
+  `--disable-gpu` or `ELIXIROFFICE_DISABLE_GPU=1`. About shows the current state and display backend.
+- Read Aloud finds the system voices: ElixirOffice starts speech-dispatcher when it is installed but not running.
+
+### Translations
+
+- The graphics acceleration option is translated in all 45 interface languages.
+- The new Word, Excel and PowerPoint ribbon texts (Sort, Read Aloud, Thesaurus, WordArt Styles, Chart Design, table and Design
+  groups) are translated in English, French, German, Spanish, Italian, Russian, Dutch and both Portuguese variants.
+
+## Desktop 0.8.0 — published 2026-11-13
+
+### Interface conformity
+
+- Every ribbon tab of Word, Calc and Slides was checked by an automatic audit in English, French, German and Russian at
+  1360, 1100 and 900 pixels (overlaps, controls outside their group, clipped text, alerts at open), and the defects were
+  fixed.
+- Big ribbon buttons split their caption into two balanced lines ("Mise en forme / conditionnelle").
+- Calc Home: when space runs short, Editing first shows its AutoSum / Fill / Clear buttons as icons, as Excel does, before
+  the group collapses; the cell styles gallery collapses first.
+- Word Review: the order of the groups follows Word and no empty group is shown.
+- Calc in Dutch: about 1660 texts of the interface were shown in English (duplicated translation keys); they are Dutch again.
+- Word: the comment margin is translated.
+
+### Charts
+
+- Sunburst charts: the rings are in the right order (top level in the centre), one colour per top-level branch, labels
+  inside the segments along the radius, and dragging a label no longer stops the editor (#78, #79).
+- Treemap charts: one colour per top-level branch, the branch name as a header and the name of each leaf, with a legend.
+- Waterfall and funnel charts show the names of the leaves on their category axis, as Office does.
+- Sunburst labels never split a word ("Ste / m 2"): a label that is too wide becomes smaller to stay on one line, as in Excel.
+
+### PDF
+
+- The quick access toolbar of the PDF editor has a Print button, as in the other editors; it prints the PDF with the
+  system print dialog, like File > Print.
+
+### Security
+
+- Electron 44.11.3 (fixes backported from Chromium, V8, Skia, ANGLE, Dawn and ICU).
+
+### Files and fixes
+
+- Pictures: lines of SVG pictures (including WMF/EMF drawings saved by Word as SVG) that end up thinner than one
+  pixel are drawn one pixel wide, as Microsoft Word does; they looked missing before (#61).
+- Office 2016 extended charts (sunburst, waterfall, box and whisker) linked as classic charts are now also kept in
+  Excel and PowerPoint files (Word files: 0.7.3, #76).
+- Calc: the Cut / Copy / Format painter and AutoSum / Fill / Clear buttons of the Home tab no longer overlap.
+- Calc, Word, Slides: a hyperlink can point to a file of the computer (a file:// address, an absolute or relative path, as Excel
+  stores it); a click in the desktop app asks first, in the language of the interface, and opens the file with the system,
+  unless it does not exist or is a program, script or installer (#77).
+- Word: saving a DOCX keeps the style ids of the file ("Titre1", "Titre1Car"...) and every reference to them; the editor wrote
+  generated numbers ("724") before, which broke macros, templates and round-trip comparisons. New styles get an id made of their name.
+- Word: a text watermark (VML WordArt, for example "DOCUMENT DE TRAVAIL" turned by 45 degrees) is drawn with the length, height
+  and position Word gives it, for Calibri, Arial, Arial Black and Times New Roman; it was smaller and off centre.
+
+## Desktop 0.7.3 — published 2026-11-12
+
+### Layout
+
+- Spacing between East Asian and Latin text (autoSpaceDE and autoSpaceDN) follows Word desktop.
+- Header rows of floating tables repeat on the following pages.
+- The footnote separator is placed where Word puts it.
+- SET field results are no longer shown.
+
+### Word files
+
+- Office 2016 extended charts (box and whisker, sunburst...) are displayed and kept on save, including
+  files written by Apache POI; a chart type the editor cannot draw shows its fallback picture (#76).
+- A drawing that follows an extended chart is no longer lost after saving and reopening (#76).
+- Fonts embedded in a Word document are kept when the document is saved.
+- Positional tabs (w:ptab), compatibility settings and the auto spacing properties are kept.
+- No empty document protection element is written.
+- The unused built-in style gallery is no longer written into styles.xml: a file with 14 styles stays
+  at 14 styles instead of growing to about 1850.
+- VML text boxes keep their stroke wrap area, and WordArt watermarks keep Word's size.
+
+### Editors
+
+- Tooltip for the currency format.
+- "More templates" is shown only when templates are available.
+- PDF download in Firefox inside Nextcloud goes through the server.
+- Windows: no stray boxes around file names in the save and close questions and in menus (#75).
+
+### Security
+
+- Electron 44.11.2.
+
+## Desktop 0.7.2 — published 2026-11-11
+
+### Layout
+
+- Picture bullets of Word documents are kept when the document is saved and drawn with Word's size
+  rule, instead of plain bullets (#66).
+- Fonts embedded in a Word document are used for that document when no installed or bundled face
+  exists; they are not kept when the document is saved yet (#66).
+- A paragraph whose mark has a font size of 0 gets Word's minimum line height, so anchored blocks no
+  longer drift up on the page (#73).
+
+### Fixed
+
+- Pictures stored as SVG, and WMF or EMF drawings, are no longer blank in the desktop editor (#61).
+- A font named by its full face name, with an alternate name in the document, is now found; the
+  SemiBold, ExtraBold and Light weights of installed font families are used as well (#65).
+
+### Security
+
+- Electron 44.11.1 (backported Chromium, V8, PDFium, Skia, ANGLE and FFmpeg fixes).
+- Server: node-forge 1.4.3 and fast-xml-parser 5.12.0 in the server dependencies.
+
+## Desktop 0.7.1 — published 2026-11-10
+
+### Fixed
+
+- Documents set in fonts that have a bundled metric-compatible clone (Calibri, Calibri Light, Cambria,
+  Arial, Georgia, Segoe UI and others) no longer show "This document uses fonts that are not
+  available": the layout already uses the clone. Fonts without a real equivalent still get the
+  invitation to use the fonts of the computer.
+- Server: the loading skeleton of the editors is centred again with its theme colours; the public
+  source filter had rewritten its CSS variables, and the skeleton CSS now has fallback values.
+
+## Desktop 0.7.0 — published 2026-11-10
+
+### Layout
+
+- Fonts: metric-compatible substitutes for Verdana (Verdana Metric) and Tahoma (Tahoma Metric), the
+  real Noto Sans with Word's metrics, and the Ubuntu and Ubuntu Mono families are bundled, so
+  documents set in these fonts keep their line breaks and page count; measured on the Word reference
+  set with no regression (#66).
+- Tables: a row marked "do not split across pages" in a floating table moves whole to the next page
+  instead of overflowing the footer; auto-fit columns leave room for a first-line indent in every
+  compatibility mode, so short words and two-digit numbers stay on one line; the grid of a nested
+  percent-width table no longer drifts when the document is laid out again (#66).
+- Character borders ("text in a box", w:bdr) are kept on open and save and drawn as one box around
+  adjacent runs (#66).
+- The underline of a superscript run is drawn under the raised text, as in Word (#67).
+- Devanagari text in a font not yet loaded falls back to a bundled Devanagari font; the document is
+  repainted when the installed fonts finish loading; a monochrome emoji fallback is bundled.
+
+### Print and PDF export
+
+- The print panel of the editors (page range or sheets, page size, orientation, margins, scale or fit to width, gridlines and headings, preview) is available in the desktop app. Print and Save as PDF both use the native PDF writer, with an option to open the PDF afterwards; a notice warns when a sheet is set to a tiny scale or has page margins larger than the page.
+- Export of other formats is now an explicit "Export a copy"; the status message after an export is a discreet line at the bottom instead of a card.
+- Spreadsheets: the print range counts only what can be printed, merged cells outside a print area no longer extend it, and unusable page margins fall back to the defaults.
+- ODS files no longer get their bottom and top page margins increased at every save (the footer height was added again each time).
+- The spreadsheet and text mini toolbar opened by a right click closes with its menu like in Office, and can be turned off in the options.
+
+### Markdown
+
+- GitHub-like quotes and code blocks, one 11 pt text size, table alignment kept when a cell starts
+  with bold or a link; the proofing language follows the interface language.
+
+### Ask Elixir
+
+- Local OpenAI-compatible servers (LM Studio, Qwen models) work out of the box: named tool choice
+  retried when rejected, tool calls parsed from the model's reasoning, a longer time limit for local
+  endpoints, clear messages for a wrong URL or a too-small context, a Copy button on answers (#68).
+
+### Fixed
+
+- Fonts referenced by their full name (for example "Open Sans Bold") and by a localized family name
+  resolve to the installed face (#62, #65).
+
+### Security
+
+- PDF viewer engine rebuilt from our converter sources with the updated libraries (libpng 1.6.59,
+  OpenJPEG 2.5.4, zlib 1.4, FreeType 2.15.0, libtiff 4.7.2).
+- Electron 44.10.2 (backported Chromium, V8, Skia, PDFium and WebRTC fixes; Node.js 24.22.2).
+
+## Desktop 0.6.6 — published 2026-11-08
+
+### New
+
+- Home: each recent file has a "Remove from list" button and the list a "Clear list" action; the files
+  themselves are not touched (#60).
+- Documents opened from a temporary folder (for example a mail attachment) show a notice, and their
+  first Save opens Save As in the Documents folder so the changes are not lost.
+
+### Fixed
+
+- Text in a font with a Japanese name written in full-width characters (for example "ＭＳ ゴシック")
+  no longer turns into boxes once installed fonts are loaded: every localized family name of an
+  installed font is recognised (#62).
+- Text boxes inside a shape group use the installed font set in the document instead of a fallback,
+  so their lines no longer wrap or overlap (#63).
+- Markdown task lists keep their boxes (☑ / ☐).
+
+### Security
+
+- Converter libraries updated: libxml2 2.15.4, libtiff 4.7.2, FreeType 2.15.0, zlib 1.4, libpng 1.6.59,
+  OpenJPEG 2.5.4, OpenSSL 4.0.3; JasPer removed.
+
+## Desktop 0.6.5 — published 2026-11-06
+
+### New
+
+- Markdown: .md and .markdown files open as formatted documents (headings, lists, tables, code, links);
+  Save writes Markdown back after a one-time warning about formatting Markdown cannot keep; Save As
+  also offers Markdown.
+- Colour accents per module on the Home screen and document tabs: Document blue, Spreadsheet green,
+  Presentation orange, PDF red.
+
+### Fixed
+
+- "Open with ElixirOffice" on several files opens all of them; files that arrive while the app starts
+  are no longer ignored, and can be opened again later.
+- The Draw tab sits after Insert in the Word, Excel and PowerPoint editors, as in Office (#58).
+- Arabic text in cells using a Chinese font (for example SimSun) no longer turns into boxes once
+  installed fonts are loaded (#54).
+
+## Desktop 0.6.4 — published 2026-11-06
+
+### Fixed
+
+- Equations show their letters: Cambria Math now uses a math font (STIX Two Math when installed,
+  otherwise the bundled DejaVu Math TeX Gyre) instead of a text font without math glyphs (#56).
+- Presenter View opens its window with the presenter view instead of an empty window (#48).
+- Pictures copied from a web page can be pasted: the app downloads them once and stores them in the
+  document like a picture from a file (#55).
+- The Draw tab was meant to sit after Insert (#52); this did not take effect, see 0.6.5 (#58).
+- Spreadsheet PDF export keeps the sheet at its normal scale instead of shrinking large sheets to one page.
+- Spreadsheets no longer download a Korean font at open for invisible control characters (faster opening).
+
+### Server
+
+- The plugin runtime (sdkjs-plugins/v1) is installed in the image, so plugins can be added.
+
+## Desktop 0.6.3 — security release, published 2026-11-02
+
+### Security
+
+- Electron 44.10.1 (Chromium 152.0.7977.169, Node.js 24.22.1): fixes the Brotli
+  decoder vulnerability CVE-2026-111497 in the embedded browser engine and Node.js.
+- The document converters (WebAssembly) are rebuilt with Brotli 1.2.1 for the same
+  vulnerability.
+- October 2026 upstream security fixes in the editors and converters.
+
+### Changed and fixed
+
+- Saving, Save As and PDF export work when the folder path goes through a symbolic
+  link created by the user, such as a NAS or sync folder (#50).
+- A plain Ctrl+S no longer shows a persistent "Open file / Show in folder" notice;
+  the notice disappears like other confirmations (#51).
+- Choosing a font in the font list applies that font, not one a few rows above,
+  after the fonts of the computer have loaded (#47).
+- Presenter View opens its own window again instead of the normal slide show (#48).
+- Spreadsheets no longer freeze for several seconds when switching sheets or scrolling on
+  computers with many installed fonts (the installed-font lookup is now cached).
+- Spreadsheet PDF export prints the active sheet, as Microsoft Excel does.
+- Word layout closer to Microsoft Word: stacked frames, table rows that end at the
+  bottom of a page, and section breaks inside index fields.
+
+### Qualification and limitations
+
+- Build 29: 1,366 of 1,366 tests on Windows and Linux; macOS 1,297 passed, none failed,
+  69 skipped; six-format packaged smoke passed on macOS.
+
+## Desktop 0.6.2 — 2026-10-31
+
+### Changed and fixed
+
+- The theme gallery thumbnails of the presentation editor display again; the
+  desktop packages now ship the gallery sprites where the stylesheet loads them
+  (#42).
+- CSV import keeps values that start with 0x, such as Ethereum addresses, as
+  text instead of reading them as hexadecimal numbers that lost the original
+  value (#45).
+- Spreadsheet text that needs an installed system font (for example Arabic) no
+  longer turns into wrong shapes after scrolling or resizing: the selected
+  system fonts are loaded before the cells are repainted (#44).
+
+### Qualification and limitations
+
+- Published as build 27 on 2026-10-31.
+
+## Desktop 0.6.1
+
+### Changed and fixed
+
+- PDF export of Word documents with tracked changes now shows the final revision: deleted text no longer appears in the PDF.
+- Chinese, Japanese and Korean text in PDF export can use the native WebAssembly path when the runtime declares the capability, for the safe case of one character at a time from the basic multilingual plane.
+
+## Desktop 0.6.0
+
+- Improved page breaks in document tables, checked against 31 Microsoft Word reference files.
+- Restored the Mailings tab and Finish & Merge control after document permissions are established.
+- Fixed selection of installed fonts: the editor loads their local font data before applying them.
+- Known limits remain: two strict WebAssembly PDF cases still fail. Missing Word references, CJK/PDF, table geometry, startup performance and shutdown limitations remain disclosed in the release notes, together with the measured platform coverage.
+
+## Desktop 0.5.0 — build 21, awaiting release qualification
+
+### Added and fixed
+
+- Merge local CSV/XLSX recipients from Word's Mailings tab.
+- Prefer the requested installed font over a bundled metric substitute.
+- Apply the bundled CJK fallback at open, including when computer-font access is declined.
+- Avoid loading the CJK collection for Latin-only document startup.
+- Fill spreadsheet cells down with Ctrl+D and right with Ctrl+R.
+- Offer an option to remember window position and size (#35).
+- Honor the document compatibility option preventing wrapped floating tables from splitting.
+- Recover from missing selected-font metadata when opening a document.
+
+### Qualification and limitations
+
+- Frozen build 21 has passed its Linux and Windows portable suites and independent package-content checks. Native platform acceptance is recorded separately; this entry does not claim a measured startup-speed improvement.
+- Installers remain publisher-unsigned. macOS is arm64-only, ad-hoc signed and unnotarized; the AppImage sandbox limitation remains. Silent updates are not included.
+- Existing conversion, AI, shutdown, printing and long-session memory limitations remain. Publication is performed by the owner after final qualification.
+
+## Desktop0.4.0 — corresponding-source candidate
+
+- Make Ask Elixir/setup discoverable; retain optional, off-by-default AI with
+  explicit configuration, consent and user requests across the three editors.
+- Persist interface size independently of document zoom (#38).
+- Preserve Word reading view/selection during optional late-font layout, while
+  newer editing/navigation wins (#37). Limited sampled Windows evidence does not
+  measure a CPU or micro-freeze improvement.
+- Address the reported CJK case when Computer fonts is allowed and a CJK font is
+  installed (#39), normally available on Windows/macOS. Pinned CJK Regular/Bold
+  resources are included, but their fallback is not applied on initial open if
+  Computer fonts is declined or no CJK font is installed; this remains for 0.5.
+
+This row describes corresponding source. New package/Mac/native acceptance,
+owner signatures and publication remain distinct; no old platform allowance or
+new release date is inferred. All previous published history and legal notices
+below are preserved.
+
+
+## 0.3.3 — corresponding-source preparation
+
+- Record source for desktop build 19 with Electron 44.9.1, Node 22.23.3 and unchanged full/PDF runtime pins.
+- Include the selected update, display-language and desktop source changes from original product `6a01f2a0f12e316df3a4ca4a4fdbe6c1bacca8de`.
+- Preserve established public legal notices, source history and earlier release entries. Publication date and platform acceptance are recorded separately after actual owner review; this source entry claims neither.
+
+
+## Desktop 0.3.2 (2026-10-23)
+
+### Changed and fixed
+
+- Offer bounded, daily GitHub release notices with an Updates opt-out, reminder/skip choices and browser-based release pages; no automatic download or installation.
+- Offer an opt-in compact title bar on Linux/X11, with guarded native-frame recovery and existing document controls/search.
+- Center native document header icons across the four desktop editors.
+- Cache normalized computer-font name matching work (issue31); reporter Windows impact remains unmeasured.
+- Keep AppImage raw tools in a persistent pin-verified store, check every file before allocation, and forbid cached-only download fallback even after a verified input disappears.
+
+### Qualification
+
+- Frozen by the lead on 2026-10-23; linguistic review is deferred to 0.3.3. Final packages and native acceptance remain pending actual results.
+- Compact source evidence is Linux/X11 only; other platforms retain the native frame. Windows opening delays and physical printing remain platform investigations.
+- Automatic installation is outside this release; inherited conversion/signing limits remain. See [draft notes](https://github.com/leag1234/elixiroffice/releases/tag/v0.3.2).
+
+## Desktop 0.3.1 — release preparation (2026-10-22)
+
+### Changed and fixed
+
+- Open each document in a separate window by default; offer optional tabs and Home in Options.
+- Share an Office-style start screen; arrange File commands in Office order, with Rename/Move in Info and Export through Save As.
+- Remember window placement, show file-type icons and modified dots, remove the successful-open floating notice, and focus already-open files.
+- Render equation category SVG icons and support late menu captions (issue34).
+- Defer automatic computer-font discovery and add bounded, content-free opening diagnostics.
+- Check pip capability and exact pinned local builder images before release allocation.
+- Correct platform fixtures and Linux test-harness teardown without claiming a product crash fix.
+
+### Qualification
+
+- Compact title bar is not included. Wasm recompilation per new window remains.
+- Windows opening delays require measurement; simulated Mac fixtures do not certify physical macOS, and revised tabs/windows await physical Windows qualification.
+- Final installers and platform results remain pending. See [release notes](https://github.com/leag1234/elixiroffice/releases/tag/v0.3.1) for inherited conversion, signing and native limits.
+
+## Desktop 0.3.0
+
+### Added
+
+- Multiple document tabs and live detach/move between windows, including keyboard-accessible move commands.
+- Document the independently maintained Arch Linux AUR package.
+
+### Fixed
+
+- Declare audited ALSA, GBM and GL dispatch runtime dependencies in the Linux DEB.
+
+- Clarify Options, Rename and recovery dialogs; preserve document-scoped save and close decisions.
+- Wait for document-engine readiness before installing discovered computer fonts.
+- Refine macOS app and DMG artwork, including small icon representations.
+- Preserve ODS embedded chart caches and worksheet identities; correct CBC padding for protected ODF exports.
+
+### Qualification
+
+- Record the final DEB installation/dependency evidence separately from native startup; container namespace restrictions and diagnostic host-helper differences remain disclosed.
+- Record exact recovered AppImageUpdate tool pins; a moving URL remains an unproven explanation for the earlier mismatch.
+
+- Record matched full/PDF runtime qualification, Linux X11 tab scope and outstanding physical Windows tab checks.
+- Modern LibreOffice 26.8 encrypted ODS remains unsupported. Strict ODF 1.3 checks fail identically on old/new exports declaring 1.2; no regression shown, normative ODF 1.2 validity unmeasured.
+
+## Desktop 0.2.4 beta (2026-10-20)
+
+### Fixed
+
+- Windows saving: retry every file step within a short limit; a locked leftover backup copy no longer turns a completed save into an error; clear guidance (edits stay open, use Save As) when a file cannot be replaced. [#8](https://github.com/leag1234/elixiroffice/issues/8), [#12](https://github.com/leag1234/elixiroffice/issues/12)
+- Add local diagnostics for save problems with an explicit "Copy diagnostics" action (no paths or content).
+- Make the Quick Access toolbar buttons clearly visible in the Classic Light theme and stop the page shadow from darkening while typing. [#13](https://github.com/leag1234/elixiroffice/issues/13)
+- Hide the print status panel while the system print dialog is open.
+
+## Desktop 0.2.3 beta (2026-10-19)
+
+### Fixed
+
+- Debian/Ubuntu package: install the Electron sandbox helper with the permissions needed on systems that restrict unprivileged user namespaces (Ubuntu 24.04 and later), so the application starts. [#19](https://github.com/leag1234/elixiroffice/issues/19)
+- README: Windows and macOS download links on separate lines. [#20](https://github.com/leag1234/elixiroffice/issues/20)
+
+### Changed
+
+- All other installers are rebuilt from the 0.2.2 application source with the new version number.
+
+## Desktop 0.2.2 beta (2026-10-19)
+
+### New
+
+- Improve Arabic, Hebrew and Urdu right-to-left Home layouts and add light/dark Home appearance.
+- Improve local use of installed fonts and PDF font selection; add small Arabic/Urdu and Sinhala fallbacks.
+- Add six localized desktop-template variants, with installed-font requirements and English fallback for East Asian variants.
+
+### Fixed
+
+- Address Windows repeated-save and AutoRecover failures, with bounded retries and a verified-backup fallback. [#8](https://github.com/leag1234/elixiroffice/issues/8)
+- Improve Windows per-user/registered font discovery and tolerance of unreadable fonts. [#9](https://github.com/leag1234/elixiroffice/issues/9)
+- Keep the Word zoom track clear of its plus button. [#2](https://github.com/leag1234/elixiroffice/issues/2)
+- Wait for the prepared PDF before native printing and preserve vector text and shapes.
+- Complete Save As for untitled documents from File > Close; wait for saving to finish and keep the document open if saving fails or is cancelled.
+- Make the full Browse area clickable and keyboard accessible.
+- Improve Options, picture-layout and formula-wizard focus; label dialogs for accessibility, pause feature tips around dialogs and translate existing password-choice labels and warnings.
+- Reduce duplicate desktop menus and expire informational notices without hiding errors or warnings.
+
+### Security
+
+- Harden the document converter: archive limits and integrity checks, no external XML entities or network access, SVG images limited to embedded and same-document content, stricter EPUB checks, and failed embedded archives no longer produce partial output. Archives with path-escaping members are cleaned rather than rejected; strict rejection is planned for 0.2.3.
+
+### Known limitations
+
+- Multiple document windows are not implemented. [#7](https://github.com/leag1234/elixiroffice/issues/7)
+- Physical-printer output, older-Linux print compatibility, and native Windows save/font fixes still need confirmation.
+- Local PDF editing, AutoRecover and page reordering remain limited; some right-to-left table conversions and Arabic/Urdu/Sinhala PDF text extraction remain imperfect.
+- Arabic picture-menu and other translation gaps, font-dependent templates, ODS embedded-object loss, and unsigned installers remain as described in the release notes.
+- A small “Waiting for your choice” status panel stays visible while the system print dialog is open; improving it is planned for 0.2.3.
+
+
+## Desktop 0.2.1 beta (2026-10-16)
+
+### Fixed
+
+- Opening files no longer fails after a settings write error or an unreadable recent file (including network-share and OneDrive paths) with a misleading "open elsewhere" message (GitHub #4).
+- Computer fonts on Windows tolerate unreadable font files (GitHub #4).
+- Office-style file shortcuts work in open documents: Ctrl+N/O/S/P, Save As with F12 on Windows/Linux or Command+Shift+S on macOS. Word's Ctrl+Shift+S, Ctrl+Shift+E and Ctrl+Q remain available to the editor (GitHub #6).
+- The desktop app no longer shows the browser-only keyboard notice (GitHub #3).
+- A "Cancelled" message no longer stays at the bottom of the window (GitHub #2).
+- Dialogs show the ElixirOffice product name.
+
+### Changes
+- Saving and exporting show progress, can be cancelled where possible, and end with a "file ready" message with Open and Show in folder.
+- Save As has a new dialog that lists every format with a short description, followed by the system dialog to choose the folder and name.
+- When you close a document with unsaved changes, ElixirOffice asks, as Word does, whether to save the changes to the named document: Save, Don't Save or Cancel.
+- PDF pages can be rotated, and Arabic blank templates use upright text.
+- About identifies the application version, build number and source revision on every platform.
+- Package versions are distinct and ordered for upgrades.
+
+### Security
+
+This release includes security fixes for the server version and for links in documents.
+
+- Hosted/server hardening: downloads retain network filtering when JWT authentication is disabled, require verified WOPI token metadata and reject mismatched signed URL fields; unsigned URLs receive no outbox credentials. AI proxy authentication and destination checks are strengthened.
+- Hosted/server and editor text handling: WOPI conversion status and /baseurl output are escaped or plain text; privileged cache hashes are validated under the C locale; spreadsheet Formula Wizard values are encoded.
+- Document links use an explicit scheme allowlist across main, mobile, embed and forms interfaces, including diagrams. Bare www. targets receive http://; unsupported relative document links show a non-opening warning. Forms integrator-config relative links retain their configured-origin behavior.
+- Imported tracked font/style names are encoded in the Review panel.
+
+Upstream security-fix attribution: server download/WOPI commits [a82922ed](https://github.com/ONLYOFFICE/server/commit/a82922ed2349d06495bfb85bed924be17fb71740), [fba41289](https://github.com/ONLYOFFICE/server/commit/fba41289d55fee1a90d34df41fa115b7de8f4f1d); AI proxy commits [ae8eb764](https://github.com/ONLYOFFICE/server/commit/ae8eb764354f75539fbb3c1ca12e0d967d02cdf0), [b98384e6](https://github.com/ONLYOFFICE/server/commit/b98384e6524fbc0376c8db4332ca0398e00abf67); WOPI text commit [4927e10d](https://github.com/ONLYOFFICE/web-apps/commit/4927e10d44b9f9f2ee6f9656d96be4a950fdd707). Only code hunks dated before 2026-05-14 were ported; original licence headers are retained. Base-URL, cache, Formula Wizard, hyperlink policy and Review-panel corrections are ElixirOffice changes.
+
+Further converter hardening and explicit per-document confirmation before running macros are planned for desktop 0.2.2 and server 0.1.2. A separate execution realm for macros remains an architecture backlog item. The 0.2.1 build retains its existing converter runtime; the source branch and regression results do not certify the later rebuilt converter.

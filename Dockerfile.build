@@ -1,0 +1,63 @@
+# Full ieWorkspace image built by GitHub Actions (.github/workflows/build-ieworkspace.yml)
+# and published to ghcr.io/ieenterprises/ieworkspace:main
+FROM ghcr.io/leag1234/elixiroffice-server:beta1.1
+
+# 1. Start page / PWA brand assets (round logo, favicon, manifest, icons)
+RUN mkdir -p /var/www/elixiroffice/ieworkspace-brand
+COPY branding/example/nodejs/public/elixir/brand/logo.svg \
+     branding/example/nodejs/public/elixir/brand/favicon.svg \
+     branding/example/nodejs/public/elixir/brand/manifest.webmanifest \
+     branding/example/nodejs/public/elixir/brand/icon-192.png \
+     branding/example/nodejs/public/elixir/brand/icon-512.png \
+     branding/example/nodejs/public/elixir/brand/icon-maskable-512.png \
+     /var/www/elixiroffice/ieworkspace-brand/
+
+# 2. Editor header, about, embed, and welcome logos (desktop + mobile)
+COPY branding/web-apps/theme/elixiroffice/assets/img/header/logo_light.svg \
+     branding/web-apps/theme/elixiroffice/assets/img/header/logo_dark.svg \
+     branding/web-apps/theme/elixiroffice/assets/img/header/header-logo_s.svg \
+     branding/web-apps/theme/elixiroffice/assets/img/header/dark-logo_s.svg \
+     /var/www/elixiroffice/documentserver/web-apps/apps/common/main/resources/img/header/
+
+COPY branding/web-apps/theme/elixiroffice/assets/img/header/logo_light.svg \
+     branding/web-apps/theme/elixiroffice/assets/img/header/logo_dark.svg \
+     branding/web-apps/theme/elixiroffice/assets/img/header/header-logo_s.svg \
+     branding/web-apps/theme/elixiroffice/assets/img/header/dark-logo_s.svg \
+     /var/www/elixiroffice/documentserver/web-apps/apps/common/mobile/resources/img/header/
+
+COPY branding/web-apps/theme/elixiroffice/assets/img/about/logo.svg \
+     /var/www/elixiroffice/documentserver/web-apps/apps/common/main/resources/img/about/logo.svg
+COPY branding/web-apps/theme/elixiroffice/assets/img/about/logo.svg \
+     /var/www/elixiroffice/documentserver/web-apps/apps/common/main/resources/img/about/logo_s.svg
+COPY branding/web-apps/theme/elixiroffice/assets/img/header/logo_dark.svg \
+     /var/www/elixiroffice/documentserver/web-apps/apps/common/main/resources/img/about/logo-white_s.svg
+COPY branding/web-apps/theme/elixiroffice/assets/img/about/logo.svg \
+     /var/www/elixiroffice/documentserver/web-apps/apps/common/mobile/resources/img/about/logo.svg
+
+COPY branding/web-apps/theme/elixiroffice/assets/img/embed/logo.svg \
+     /var/www/elixiroffice/documentserver/web-apps/apps/common/main/resources/img/embed/logo.svg
+COPY branding/web-apps/theme/elixiroffice/assets/img/embed/logo.svg \
+     /var/www/elixiroffice/documentserver/web-apps/apps/common/mobile/resources/img/embed/logo.svg
+COPY branding/web-apps/theme/elixiroffice/assets/img/embed/logo.svg \
+     /var/www/elixiroffice/documentserver/web-apps/apps/common/embed/resources/img/logo.svg
+
+COPY branding/web-apps/theme/elixiroffice/assets/img/header/logo_light.svg \
+     /var/www/elixiroffice/documentserver-example/welcome/css/logo.svg
+
+# 3. Regenerate .gz files for nginx gzip_static and fix permissions
+RUN set -e; \
+    for f in \
+      /var/www/elixiroffice/documentserver/web-apps/apps/common/main/resources/img/header/*.svg \
+      /var/www/elixiroffice/documentserver/web-apps/apps/common/main/resources/img/about/*.svg \
+      /var/www/elixiroffice/documentserver/web-apps/apps/common/main/resources/img/embed/*.svg \
+      /var/www/elixiroffice/documentserver/web-apps/apps/common/mobile/resources/img/header/*.svg \
+      /var/www/elixiroffice/documentserver/web-apps/apps/common/mobile/resources/img/about/*.svg \
+      /var/www/elixiroffice/documentserver/web-apps/apps/common/mobile/resources/img/embed/*.svg \
+      /var/www/elixiroffice/documentserver/web-apps/apps/common/embed/resources/img/*.svg; do \
+      [ -f "$f" ] && gzip -kf "$f" && chmod 644 "$f" "$f.gz"; \
+    done; \
+    chmod -R a+rX /var/www/elixiroffice/ieworkspace-brand
+
+# 4. Start page config (appName: ieWorkspace) and nginx branding overlay
+COPY deploy/server/example.json /etc/elixiroffice/documentserver-example/local-production-linux.json
+COPY deploy/render/ds-example.conf /etc/nginx/includes/ds-example.conf

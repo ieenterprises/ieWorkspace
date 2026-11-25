@@ -1,0 +1,47 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+:root{color-scheme:light dark;font:14px system-ui,sans-serif;--tab-bg:#f2f3f5;--tab-active:#fff;--tab-text:#252525;--tab-border:#9c9fa5;--eo-module-word:#2B579A;--eo-module-cell:#217346;--eo-module-slide:#C43E1C;--eo-module-pdf:#B30B00}
+@media(prefers-color-scheme:dark){:root{--tab-bg:#23252a;--tab-active:#383b42;--tab-text:#f4f4f4;--tab-border:#888d98;--eo-module-word:#5A82C4;--eo-module-cell:#3E9A6B;--eo-module-slide:#E06A4A;--eo-module-pdf:#D94030}}
+*{box-sizing:border-box}body{margin:0;background:var(--tab-bg);color:var(--tab-text)}
+#tab-bar{display:flex;height:44px;align-items:stretch;gap:4px;padding:4px;overflow:hidden}
+#tabs{display:flex;flex:1;gap:4px;min-width:0;overflow-x:auto;scrollbar-width:thin}
+.document-tab{display:flex;flex:none;max-width:280px;min-width:96px;border:1px solid var(--tab-border);border-radius:5px;background:var(--tab-bg)}
+.document-tab.selected{background:var(--tab-active)}
+button{font:inherit;color:inherit;background:transparent;border:0;border-radius:3px;cursor:pointer}
+button:focus-visible{outline:2px solid Highlight;outline-offset:-2px}
+.document-label{min-width:0;flex:1;display:flex;gap:6px;align-items:center;padding:4px 8px}
+.document-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;unicode-bidi:plaintext;text-align:start}
+.document-dirty{font-weight:bold}.document-close{padding:0 8px;flex:none}#move-tab,#new-tab{flex:none;min-width:32px;font-size:22px}
+#tab-error{position:fixed;top:4px;left:4px;right:80px;height:36px;z-index:2;display:flex;align-items:center;gap:8px;padding:4px 8px;border:1px solid var(--tab-border);border-radius:4px;background:var(--tab-active)}
+#tab-error[hidden]{display:none}#tab-error-text{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}#tab-error-dismiss{flex:none}
+
+#tab-bar[hidden]{display:none}
+
+#home-tab{flex:none;padding:0 12px;display:flex;align-items:center;justify-content:center}#home-tab[hidden]{display:none}
+#home-tab .home-icon{width:17px;height:17px;flex:none} /* #95: ElixirOffice mark instead of the word Home */
+
+.document-icon{width:16px;height:16px;flex:none;fill:currentColor}.document-icon.t-word{color:var(--eo-module-word)}.document-icon.t-cell{color:var(--eo-module-cell)}.document-icon.t-slide{color:var(--eo-module-slide)}.document-icon.t-pdf{color:var(--eo-module-pdf)}
+.document-dirty{font-size:8px;line-height:1;flex:none}
+.document-tab{border-inline-start:3px solid var(--eo-module-word)}
+.document-tab:has(.document-icon.t-cell){border-inline-start-color:var(--eo-module-cell)}
+.document-tab:has(.document-icon.t-slide){border-inline-start-color:var(--eo-module-slide)}
+.document-tab:has(.document-icon.t-pdf){border-inline-start-color:var(--eo-module-pdf)}
+
+/* The native Window Controls Overlay paints its window buttons; only this safe area is interactive. */
+.compact #tab-bar{height:36px;position:fixed;top:0;left:env(titlebar-area-x,0px);width:env(titlebar-area-width,calc(100vw - 144px));padding:3px 8px;gap:6px;app-region:drag}
+.compact button,.compact #tabs{app-region:no-drag}
+.compact #tabs{flex:1}.compact .document-tab{max-width:230px;min-width:90px;border-radius:6px;border-color:transparent}.compact .document-tab.selected{border-color:var(--tab-border)}
+#quick-access{display:flex;gap:2px;align-items:center;flex:none}#quick-access button{width:28px;height:28px;padding:4px}#quick-access svg{width:20px;height:20px;fill:currentColor}
+#single-title{display:flex;align-items:center;justify-content:center;gap:8px;flex:1;min-width:80px;overflow:hidden}#single-name{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}#single-dirty{font-size:8px}
+#command-search{flex:0 1 230px;min-width:40px;max-width:28vw;text-align:start;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border:1px solid var(--tab-border);padding:2px 10px}
+#drag-space{display:none}.compact #drag-space{display:block;min-width:32px;flex:none}
+#tabs[hidden],#quick-access[hidden],#single-title[hidden],#command-search[hidden],button[hidden]{display:none}
+button:disabled{opacity:.5;cursor:default}.compact button:not(:disabled):hover{background:var(--tab-active)}
+@media(max-width:760px){.compact #command-search{flex-basis:100px;max-width:20vw}.compact #drag-space{min-width:16px}.compact #new-tab,.compact #move-tab{min-width:24px}}
+
+.compact #drag-space,.compact #single-title{app-region:drag;user-select:none}
+
+:root[data-eo-theme=light]{color-scheme:light;--tab-bg:#f2f3f5;--tab-active:#fff;--tab-text:#252525;--tab-border:#9c9fa5;--eo-module-word:#2B579A;--eo-module-cell:#217346;--eo-module-slide:#C43E1C;--eo-module-pdf:#B30B00}
+:root[data-eo-theme=dark]{color-scheme:dark;--tab-bg:#23252a;--tab-active:#383b42;--tab-text:#f4f4f4;--tab-border:#888d98;--eo-module-word:#5A82C4;--eo-module-cell:#3E9A6B;--eo-module-slide:#E06A4A;--eo-module-pdf:#D94030}
+
+#single-title[data-has-document=false] .document-icon{display:none}
+[dir=rtl] [data-quick=undo] svg,[dir=rtl] [data-quick=redo] svg{transform:scaleX(-1)}

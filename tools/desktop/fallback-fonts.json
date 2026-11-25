@@ -1,0 +1,159 @@
+[
+  {
+    "family": "Elixir Fallback Arabic",
+    "upstreamFamily": "Noto Sans Arabic",
+    "directory": "elixir-fallback-arabic",
+    "font": {
+      "url": "https://raw.githubusercontent.com/google/fonts/94301472b4d809299b4775bc6502592b83dd6934/ofl/notosansarabic/NotoSansArabic%5Bwdth%2Cwght%5D.ttf",
+      "sha256": "63111b5b2e074dd48cc67692e0a2726d86ee94c1c37fe8598257b7b4e87e869e"
+    },
+    "license": {
+      "url": "https://raw.githubusercontent.com/google/fonts/94301472b4d809299b4775bc6502592b83dd6934/ofl/notosansarabic/OFL.txt",
+      "sha256": "07fc70bfeb985cc1a87a8587d0a0c80bab11c86c9dc3fd95b6f0cb332f983e96"
+    },
+    "outputs": [
+      {
+        "style": "Regular",
+        "bytes": 194288,
+        "sha256": "9c96f732bf0e228900ad672c284d3e4e1c8345c191a86e5a0fcdbf9dc1f83a41"
+      },
+      {
+        "style": "Bold",
+        "bytes": 194476,
+        "sha256": "b79f163c3fae449aa7f5d1a0a8deac257a9d10f4f0924042207b9a2e60c27985"
+      }
+    ],
+    "noticeSha256": "984dce4cc7cb6b48e9b197a1e756e052b4741158417c6134c9688586b5dccf5c"
+  },
+  {
+    "family": "Elixir Fallback Sinhala",
+    "upstreamFamily": "Noto Sans Sinhala",
+    "directory": "elixir-fallback-sinhala",
+    "font": {
+      "url": "https://raw.githubusercontent.com/google/fonts/94301472b4d809299b4775bc6502592b83dd6934/ofl/notosanssinhala/NotoSansSinhala%5Bwdth%2Cwght%5D.ttf",
+      "sha256": "9bd93e407a278075be403324063bc94a7e306c44de4df81214e932330c22eecf"
+    },
+    "license": {
+      "url": "https://raw.githubusercontent.com/google/fonts/94301472b4d809299b4775bc6502592b83dd6934/ofl/notosanssinhala/OFL.txt",
+      "sha256": "2d6f7c43bce61f4b1919379f901bc613484f5285f520b6d29bb7c1f31b17e841"
+    },
+    "outputs": [
+      {
+        "style": "Regular",
+        "bytes": 247104,
+        "sha256": "731f36a8ee33bedcfc361775c6bef358124558d65fb29c0889011b93fad17097"
+      },
+      {
+        "style": "Bold",
+        "bytes": 246760,
+        "sha256": "b38f4cb626ac5e9fe2453319fd52510fe99d9f41987231ee45ad8cb0b993c1c5"
+      }
+    ],
+    "noticeSha256": "0aad5dafb09d62fd3851b815ab21ffe50f32171ea6168beaaa2c9437bb4f6c77"
+  },
+  {
+    "family": "Elixir Fallback Devanagari",
+    "upstreamFamily": "Noto Sans Devanagari",
+    "directory": "elixir-fallback-devanagari",
+    "font": {
+      "url": "https://raw.githubusercontent.com/google/fonts/94301472b4d809299b4775bc6502592b83dd6934/ofl/notosansdevanagari/NotoSansDevanagari%5Bwdth%2Cwght%5D.ttf",
+      "sha256": "14ec4af41f27482216d1c2229f417ff9b1425e1babb014e57d1d40d03229853e"
+    },
+    "license": {
+      "url": "https://raw.githubusercontent.com/google/fonts/94301472b4d809299b4775bc6502592b83dd6934/ofl/notosansdevanagari/OFL.txt",
+      "sha256": "a216f6f8d85c7228093e0ee5e258d9d377e6671f68acb4db1930b29583d0f331"
+    },
+    "outputs": [
+      {
+        "style": "Regular",
+        "bytes": 218180,
+        "sha256": "86fe4006cfbff3feb8667dce62931e0cfa99e34ac2f546a16f71214fe730f46c"
+      },
+      {
+        "style": "Bold",
+        "bytes": 218744,
+        "sha256": "e3c2df14cbeeeb7859cb5ff7f46b00348838294a8ea7df9a6682822d47269208"
+      }
+    ],
+    "noticeSha256": "906cd625c9354e29dc1e1eb8c5c2c61df8f06da221909f4654077bcb779c3b7a"
+  },
+  {
+    "family": "Elixir Fallback Emoji",
+    "upstreamFamily": "Noto Emoji",
+    "directory": "elixir-fallback-emoji",
+    "font": {
+      "url": "https://raw.githubusercontent.com/google/fonts/94301472b4d809299b4775bc6502592b83dd6934/ofl/notoemoji/NotoEmoji%5Bwght%5D.ttf",
+      "sha256": "de6c18832938afc99caf132b39d6a30a19bac7f2e812e28db2535b4608d27551"
+    },
+    "license": {
+      "url": "https://raw.githubusercontent.com/google/fonts/94301472b4d809299b4775bc6502592b83dd6934/ofl/notoemoji/OFL.txt",
+      "sha256": "500bb1ccf43df7bbb522112f9133a52b16e1c35e809632f5d8609b179152de5b"
+    },
+    "outputs": [
+      {
+        "style": "Regular",
+        "bytes": 886664,
+        "sha256": "83527dab19799c8b6bbc2174299f5ce3471e45e3f4e069ccb8380f9b76db0f1e"
+      },
+      {
+        "style": "Bold",
+        "bytes": 885200,
+        "sha256": "10cf784edf92e0cb6ae8fa9665e60d09602b001777e011bd3091bc41999ac9fd"
+      }
+    ],
+    "noticeSha256": "80d0f0ea3c32668aafaa1433c0a4f4d1b7aac1c4d878d44e171c5211b390e059"
+  },
+  {
+    "family": "Noto Sans CJK",
+    "upstreamFamily": "Noto Sans CJK",
+    "version": "2.004",
+    "copyright": "Copyright 2014-2021 Adobe (http://www.adobe.com/). Noto is a trademark of Google Inc.",
+    "directory": "noto-sans-cjk",
+    "mode": "copy",
+    "families": [
+      "Noto Sans CJK JP",
+      "Noto Sans CJK KR",
+      "Noto Sans CJK SC",
+      "Noto Sans CJK TC",
+      "Noto Sans CJK HK",
+      "Noto Sans Mono CJK JP",
+      "Noto Sans Mono CJK KR",
+      "Noto Sans Mono CJK SC",
+      "Noto Sans Mono CJK TC",
+      "Noto Sans Mono CJK HK"
+    ],
+    "aliases": [
+      "Elixir Fallback CJK JP",
+      "Elixir Fallback CJK KR",
+      "Elixir Fallback CJK SC",
+      "Elixir Fallback CJK TC",
+      "Elixir Fallback CJK HK",
+      "Elixir Fallback Mono CJK JP",
+      "Elixir Fallback Mono CJK KR",
+      "Elixir Fallback Mono CJK SC",
+      "Elixir Fallback Mono CJK TC",
+      "Elixir Fallback Mono CJK HK"
+    ],
+    "fonts": [
+      {
+        "style": "Regular",
+        "filename": "NotoSansCJK-Regular.ttc",
+        "url": "https://raw.githubusercontent.com/notofonts/noto-cjk/Sans2.004/Sans/OTC/NotoSansCJK-Regular.ttc",
+        "bytes": 19484784,
+        "sha256": "b76b0433203017ca80401b2ee0dd69350349871c4b19d504c34dbdd80541690a"
+      },
+      {
+        "style": "Bold",
+        "filename": "NotoSansCJK-Bold.ttc",
+        "url": "https://raw.githubusercontent.com/notofonts/noto-cjk/Sans2.004/Sans/OTC/NotoSansCJK-Bold.ttc",
+        "bytes": 20050760,
+        "sha256": "faa5f3656a78b2e2d450d27fe8382c778bc2b6bb5ea29c986664a6a435056ceb"
+      }
+    ],
+    "license": {
+      "url": "https://raw.githubusercontent.com/notofonts/noto-cjk/Sans2.004/LICENSE",
+      "sha256": "6a73f9541c2de74158c0e7cf6b0a58ef774f5a780bf191f2d7ec9cc53efe2bf2"
+    },
+    "noticeSha256": "dba48899fb3e605efe252cd608dea8d4209dbae6efc33b97787582829a4a08ed"
+  }
+]
