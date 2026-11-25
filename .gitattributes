@@ -1,0 +1,2 @@
+# Keep exact LF line endings for SHA-256 verified desktop trust file on Windows runners
+desktop/update-production-trust.cjs text eol=lf

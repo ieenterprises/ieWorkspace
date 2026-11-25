@@ -10,6 +10,13 @@ const desktopDir = path.join(root, 'desktop');
 const assetsDir = path.join(desktopDir, 'assets');
 const themeImgDir = path.join(root, 'branding', 'web-apps', 'theme', 'elixiroffice', 'assets', 'img');
 
+// 0. Ensure update-production-trust.cjs has LF line endings (Windows git checkout converts to CRLF)
+const trustPath = path.join(desktopDir, 'update-production-trust.cjs');
+if (fs.existsSync(trustPath)) {
+  const trustLf = fs.readFileSync(trustPath, 'utf8').replace(/\r\n/g, '\n');
+  fs.writeFileSync(trustPath, trustLf, 'utf8');
+}
+
 // 1. Create build-info.json and stamp desktop/package.json so build-identity-before-pack.cjs passes
 const pkgPath = path.join(desktopDir, 'package.json');
 const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
