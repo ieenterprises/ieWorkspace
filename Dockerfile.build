@@ -66,8 +66,14 @@ ENV EXAMPLE_ENABLED=true \
 COPY deploy/server/example.json /etc/elixiroffice/documentserver-example/local-production-linux.json
 COPY deploy/render/ds-example.conf /etc/nginx/includes/ds-example.conf
 
-# 5. Redirect root "/" directly to ieWorkspace Home (/example/) instead of /welcome/
+# 5. Force example service to autostart on port 3000 (prevents PaaS PORT=80/10000 from breaking upstream localhost:3000),
+#    and redirect root "/" directly to ieWorkspace Home (/example/) instead of /welcome/
 RUN set -e; \
+    chmod 644 /etc/elixiroffice/documentserver-example/local-production-linux.json; \
+    if [ -f /etc/supervisor/conf.d/ds-example.conf ]; then \
+      sed -i 's/^autostart=false$/autostart=true/' /etc/supervisor/conf.d/ds-example.conf; \
+      sed -i 's/^environment=/environment=PORT=3000,/' /etc/supervisor/conf.d/ds-example.conf; \
+    fi; \
     for f in /etc/elixiroffice/documentserver/nginx/includes/ds-docservice.conf /etc/nginx/includes/ds-docservice.conf; do \
       [ -f "$f" ] && sed -i 's|/welcome/|/example/|g' "$f"; \
     done; \
