@@ -1,0 +1,32 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.ieenterprises.ieworkspace'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "com.ieenterprises.ieworkspace"
+        minSdk 24
+        targetSdk 34
+        versionCode 94
+        versionName "0.9.4"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig signingConfigs.debug
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    implementation 'androidx.appcompat:appcompat:1.7.0'
+}

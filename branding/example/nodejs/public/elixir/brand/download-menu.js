@@ -1,29 +1,37 @@
-/* ieWorkspace Desktop Download Dropdown — non-invasive Home header widget */
+/* ieWorkspace Desktop & Mobile Download Dropdown — non-invasive Home header widget */
 (function () {
   'use strict';
 
-  // Direct desktop installer URLs (update these once custom ieWorkspace release binaries are published)
+  var RELEASE_BASE = 'https://github.com/ieenterprises/ieWorkspace/releases/latest/download';
+
   var DOWNLOADS = [
     {
       id: 'windows',
       label: 'Windows',
       detail: 'Windows (x64 / x86) · .exe installer',
-      href: 'https://github.com/leag1234/elixiroffice/releases/download/v0.9.4/ElixirOffice-0.9.4-win-x64.exe',
+      href: RELEASE_BASE + '/ieWorkspace-0.9.4-win-x64.exe',
       icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 5.55 10.35 4.5v7.05H3V5.55zm8.25-1.18L21 3v8.55h-9.75V4.37zM3 12.45h7.35v7.05L3 18.45v-6zm8.25 0H21V21l-9.75-1.37V12.45z"/></svg>'
     },
     {
       id: 'macos',
       label: 'macOS',
       detail: 'Apple Silicon · .dmg disk image',
-      href: 'https://github.com/leag1234/elixiroffice/releases/download/v0.9.4/ElixirOffice-0.9.4-mac-arm64.dmg',
+      href: RELEASE_BASE + '/ieWorkspace-0.9.4-mac-arm64.dmg',
       icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.96 6.33c.67-.81 1.12-1.94 1-3.08-.96.04-2.13.64-2.82 1.45-.61.7-.114 1.85-.99 2.96 1.07.08 2.15-.52 2.81-1.33z"/></svg>'
     },
     {
       id: 'linux',
       label: 'Linux',
       detail: 'Linux (64-bit) · .AppImage',
-      href: 'https://github.com/leag1234/elixiroffice/releases/download/v0.9.4/ElixirOffice-0.9.4-x86_64.AppImage',
+      href: RELEASE_BASE + '/ieWorkspace-0.9.4-x86_64.AppImage',
       icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a4.5 4.5 0 0 0-4.5 4.5c0 1.4.4 2.7 1.1 3.8-.9 1.3-1.6 3-1.6 4.7 0 2.1 1.2 3.8 3 4.5-.2.5-.3 1-.3 1.5h4.6c0-.5-.1-1-.3-1.5 1.8-.7 3-2.4 3-4.5 0-1.7-.7-3.4-1.6-4.7.7-1.1 1.1-2.4 1.1-3.8A4.5 4.5 0 0 0 12 2zm-1.5 4.5a1 1 0 1 1 0 2 1 1 0 0 1 0-2zm3 0a1 1 0 1 1 0 2 1 1 0 0 1 0-2zM12 10c1.2 0 2 .6 2 1.2 0 .5-.9 1-2 1s-2-.5-2-1c0-.6.8-1.2 2-1.2z"/></svg>'
+    },
+    {
+      id: 'android',
+      label: 'Android',
+      detail: 'Android · .apk installer',
+      href: RELEASE_BASE + '/ieWorkspace-0.9.4-android.apk',
+      icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.6 9.48l1.84-3.18a.49.49 0 0 0-.18-.67.49.49 0 0 0-.67.18l-1.86 3.22A11.3 11.3 0 0 0 12 8c-1.72 0-3.33.38-4.73 1.03L5.41 5.81a.49.49 0 0 0-.67-.18.49.49 0 0 0-.18.67L6.4 9.48A10.7 10.7 0 0 0 1 18h22a10.7 10.7 0 0 0-5.4-8.52zM7 15.25a1.25 1.25 0 1 1 0-2.5 1.25 1.25 0 0 1 0 2.5zm10 0a1.25 1.25 0 1 1 0-2.5 1.25 1.25 0 0 1 0 2.5z"/></svg>'
     }
   ];
 
@@ -39,7 +47,7 @@
       '.ie-dl-btn svg{flex-shrink:0;}' +
       '.ie-dl-caret{transition:transform .15s;}' +
       '.ie-dl-wrap.open .ie-dl-caret{transform:rotate(180deg);}' +
-      '.ie-dl-menu{position:absolute;top:calc(100% + 6px);right:0;min-width:250px;background:#ffffff;border:1px solid rgba(0,0,0,.12);border-radius:10px;box-shadow:0 10px 28px rgba(0,0,0,.14);padding:6px;z-index:1000;display:none;}' +
+      '.ie-dl-menu{position:absolute;top:calc(100% + 6px);right:0;min-width:255px;background:#ffffff;border:1px solid rgba(0,0,0,.12);border-radius:10px;box-shadow:0 10px 28px rgba(0,0,0,.14);padding:6px;z-index:1000;display:none;}' +
       '.ie-dl-wrap.open .ie-dl-menu{display:block;}' +
       '.ie-dl-header{padding:6px 10px 4px;font:600 11px/1.3 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;text-transform:uppercase;letter-spacing:.04em;color:#666;}' +
       '.ie-dl-item{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:7px;text-decoration:none;color:#1d1d1f;transition:background .12s;}' +
@@ -70,7 +78,7 @@
     btn.setAttribute('aria-haspopup', 'menu');
     btn.setAttribute('aria-expanded', 'false');
     btn.setAttribute('aria-controls', 'ie-dl-menu');
-    btn.title = 'Download ieWorkspace Desktop';
+    btn.title = 'Download ieWorkspace';
     btn.innerHTML =
       '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>' +
       '<span class="ie-dl-label">Download</span>' +
@@ -84,7 +92,7 @@
 
     var header = document.createElement('div');
     header.className = 'ie-dl-header';
-    header.textContent = 'Download ieWorkspace Desktop';
+    header.textContent = 'Download ieWorkspace';
     menu.appendChild(header);
 
     DOWNLOADS.forEach(function (item) {
