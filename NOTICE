@@ -1,14 +1,16 @@
-ElixirOffice
-Copyright (c) 2026 Gaël Duval and the ElixirOffice contributors
+ieWorkspace
+Copyright (c) 2026 ieEnterprises / ieWorkspace contributors
+Based on ElixirOffice (Copyright (c) 2026 Gaël Duval and the ElixirOffice contributors)
 
-ElixirOffice is free software, licensed under the GNU Affero General Public
+ieWorkspace is free software, licensed under the GNU Affero General Public
 License, version 3 only (AGPL-3.0-only). See the LICENSE file. New source files
 carry the header "SPDX-License-Identifier: AGPL-3.0-only".
 
 Lineage and attribution
 -----------------------
 
-ElixirOffice is derived from Euro-Office (https://github.com/Euro-Office), which
+ieWorkspace is derived from ElixirOffice (https://github.com/leag1234/elixiroffice),
+which is derived from Euro-Office (https://github.com/Euro-Office), which
 is itself derived from ONLYOFFICE Docs (DocumentServer) developed by
 Ascensio System SIA (https://www.onlyoffice.com/), licensed under AGPL-3.0.
 Their copyright notices, licence texts and attributions are kept unchanged in

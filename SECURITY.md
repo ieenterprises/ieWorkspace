@@ -1,13 +1,13 @@
 # Security policy
 
-ElixirOffice opens documents that come from anywhere, so security is part of every release, not an
+ieWorkspace opens documents that come from anywhere, so security is part of every release, not an
 afterthought. This page says how to report a problem, what we commit to, how we follow the projects we
 build on, and where we stand today.
 
 ## Reporting a vulnerability
 
 **Do not open a public issue.** Use GitHub private vulnerability reporting on
-[leag1234/ElixirOffice](https://github.com/leag1234/ElixirOffice/security/advisories/new). Include the
+[ieenterprises/ieWorkspace](https://github.com/ieenterprises/ieWorkspace/security/advisories/new). Include the
 affected component and version, steps to reproduce (a sample file if needed), and the impact you observed.
 Remove personal data and secrets from attachments.
 
@@ -32,7 +32,7 @@ identifier when the issue is ours, and credit the reporter unless they ask other
 
 ## How we keep up with security fixes
 
-ElixirOffice embeds many third-party components. Security fixes come from several sources, and we review
+ieWorkspace embeds many third-party components. Security fixes come from several sources, and we review
 each one before taking it:
 
 - **Various office projects.** We follow the security releases of various office projects and port the

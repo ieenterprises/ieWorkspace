@@ -1,10 +1,10 @@
-# Contributing to ElixirOffice
+# Contributing to ieWorkspace
 
-Thank you for your interest. ElixirOffice is free software (AGPL-3.0-only, see [LICENSE](LICENSE) and [NOTICE](NOTICE)). Contributions from humans and AI-assisted tools are reviewed and tested the same way.
+Thank you for your interest. ieWorkspace is free software (AGPL-3.0-only, see [LICENSE](LICENSE) and [NOTICE](NOTICE)). Contributions from humans and AI-assisted tools are reviewed and tested the same way.
 
 ## Where the code lives
 
-ElixirOffice is made of this repository and of forks of the Euro-Office components that we modify. This repository holds what is ours alone: branding (theme, icons, fonts), build and packaging tooling, the desktop app, the WebAssembly build scripts, tests, the evaluation suites and the documentation. `patches/` contains informational exports of our changes to the components.
+ieWorkspace is made of this repository and of upstream component forks (ElixirOffice / Euro-Office). This repository holds our branding (theme, icons, fonts), Render/Docker deployment pipeline, build and packaging tooling, the desktop app, the WebAssembly build scripts, tests, the evaluation suites and the documentation. `patches/` contains informational exports of component changes.
 
 The component repositories (branch `elixiroffice`; `main` follows Euro-Office) are published as `github.com/leag1234/<name>`:
 
@@ -19,7 +19,7 @@ The component repositories (branch `elixiroffice`; `main` follows Euro-Office) a
 | `document-server-package` | packaging, nginx configuration | install layout |
 | `document-templates`, `document-formats`, `dictionaries`, `core-fonts` | templates, format tables, spelling dictionaries and thesauri, fonts | data |
 
-`sdkjs-forms` is not modified and comes from Euro-Office. Changes that are not specific to ElixirOffice may also be proposed upstream to Euro-Office.
+`sdkjs-forms` is not modified and comes from Euro-Office. Changes that are not specific to ieWorkspace may also be proposed upstream to ElixirOffice or Euro-Office.
 
 ## Building
 
