@@ -444,28 +444,64 @@
         }, true);
       }
 
-      // 2. If this editor (Excel, Presentation, PDF) has no "ieWorkspace AI" ribbon tab, inject a native-looking tab inside the ribbon!
-      var tabsBar = doc.querySelector('#toolbar .ribtab ul, .toolbar .tabs, ul.ribtab, .ribtab');
-      if (!tabsBar || doc.getElementById('ie-ribbon-tab-ai')) return;
+      // 2. Unified native-looking "ieWorkspace AI" ribbon tab across ALL 4 editors (Word, Excel, Presentation, AND PDF)!
+      if (doc.getElementById('ie-ribbon-tab-ai')) return;
 
-      var existingTabs = tabsBar.querySelectorAll('a, li, button');
-      for (var t = 0; t < existingTabs.length; t++) {
-        if (/^(Elixir|ieWorkspace AI)$/i.test((existingTabs[t].textContent || '').trim())) return;
+      // Find the ribbon tab strip universally across Word, Excel, Presentation, and PDF by locating the Home/View tab
+      var toolbarEl = doc.querySelector('#toolbar, .toolbar, .box-tabs');
+      if (!toolbarEl) return;
+      var refTabItem = null;
+      var candidates = toolbarEl.querySelectorAll('li, a, button');
+      for (var c = 0; c < candidates.length; c++) {
+        var el = candidates[c];
+        var txt = (el.textContent || '').replace(/\s+/g, ' ').trim();
+        if (txt === 'View' || txt === 'Home') {
+          var parentLi = el.tagName === 'LI' ? el : el.closest('li');
+          if (parentLi && parentLi.parentElement) {
+            refTabItem = parentLi;
+            if (txt === 'View') break; // prefer View as our reference clone
+          }
+        }
+      }
+      if (!refTabItem || !refTabItem.parentElement) return;
+
+      var tabHost = refTabItem.parentElement;
+
+      // In Word, hide the legacy built-in Elixir / ieWorkspace AI tab so all 4 editors use the exact same unified tab
+      var siblingLis = tabHost.children;
+      for (var s = 0; s < siblingLis.length; s++) {
+        var sib = siblingLis[s];
+        if (sib.id === 'ie-ribbon-tab-ai') continue;
+        var stxt = (sib.textContent || '').replace(/\s+/g, ' ').trim();
+        if (/^(Elixir|ieWorkspace AI)$/i.test(stxt)) {
+          sib.style.display = 'none';
+          sib.setAttribute('data-ie-hidden-legacy-tab', '1');
+        }
       }
 
-      var tabHost = tabsBar.tagName === 'UL' ? tabsBar : (tabsBar.querySelector('ul') || tabsBar);
-      var li = doc.createElement(tabHost.tagName === 'UL' ? 'li' : 'span');
+      // Clone the exact sibling tab (e.g. View) so font, spacing, and SINGLE active underline match 100% natively!
+      var li = refTabItem.cloneNode(true);
       li.id = 'ie-ribbon-tab-ai';
-      li.className = 'ie-ribbon-tab-item';
-      li.style.cssText = 'display:inline-flex;align-items:center;cursor:pointer;padding:0 11px;height:100%;font:500 13px/1 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#1d1d1f;border-bottom:2px solid transparent;user-select:none;';
-      li.textContent = 'ieWorkspace AI';
+      li.classList.remove('active');
+      li.removeAttribute('data-tab');
+      li.style.display = '';
+      var innerLink = li.querySelector('a, button, span');
+      if (innerLink) {
+        innerLink.removeAttribute('id');
+        innerLink.removeAttribute('data-tab');
+        innerLink.removeAttribute('href');
+        innerLink.classList.remove('active');
+        innerLink.textContent = 'ieWorkspace AI';
+      } else {
+        li.textContent = 'ieWorkspace AI';
+      }
       tabHost.appendChild(li);
 
-      // Mount INSIDE the ribbon's own panel container (replacing the active tab's buttons in-place, never dropping down below the ribbon!)
+      // Mount INSIDE the ribbon's own panel container (never below the ribbon)
       var panelHost =
-        doc.querySelector('#toolbar .box-panels, #toolbar .toolbar-panels, #toolbar .panels, .toolbar .box-panels, .toolbar .panels') ||
-        (doc.querySelector('#toolbar section.panel, .toolbar section.panel') && doc.querySelector('#toolbar section.panel, .toolbar section.panel').parentElement) ||
-        doc.querySelector('#toolbar, .toolbar');
+        toolbarEl.querySelector('.box-panels, .toolbar-panels, .panels') ||
+        (toolbarEl.querySelector('section.panel') && toolbarEl.querySelector('section.panel').parentElement) ||
+        toolbarEl;
 
       var strip = doc.createElement('div');
       strip.id = 'ie-ribbon-ai-strip';
@@ -484,9 +520,8 @@
 
       if (panelHost) {
         if (getComputedStyle(panelHost).position === 'static') panelHost.style.position = 'relative';
-        // If panelHost is the whole #toolbar (fallback), offset below the tab strip height so tabs stay visible!
-        if (panelHost.id === 'toolbar' || panelHost.classList.contains('toolbar')) {
-          var tabRect = tabsBar.getBoundingClientRect();
+        if (panelHost === toolbarEl) {
+          var tabRect = tabHost.getBoundingClientRect();
           var hostRect = panelHost.getBoundingClientRect();
           var topOffset = Math.max(28, Math.round(tabRect.bottom - hostRect.top));
           strip.style.top = topOffset + 'px';
@@ -499,27 +534,27 @@
       function deactivateAiTab() {
         strip.style.display = 'none';
         li.classList.remove('active');
-        li.style.borderBottomColor = 'transparent';
-        li.style.color = '#1d1d1f';
+        if (innerLink) innerLink.classList.remove('active');
         if (prevActiveTab) {
           prevActiveTab.classList.add('active');
+          var prevA = prevActiveTab.querySelector('a, button');
+          if (prevA) prevA.classList.add('active');
           prevActiveTab = null;
         }
       }
 
       function activateAiTab() {
-        // Deactivate the currently active ribbon tab so ONLY ieWorkspace AI has the blue underline
         var activeTabs = tabHost.querySelectorAll('.active');
         prevActiveTab = null;
         for (var k = 0; k < activeTabs.length; k++) {
-          if (activeTabs[k] !== li) {
-            prevActiveTab = activeTabs[k];
-            activeTabs[k].classList.remove('active');
+          var at = activeTabs[k];
+          if (at !== li && !li.contains(at)) {
+            if (at.tagName === 'LI') prevActiveTab = at;
+            at.classList.remove('active');
           }
         }
         li.classList.add('active');
-        li.style.borderBottomColor = '#0082c9';
-        li.style.color = '#0082c9';
+        if (innerLink) innerLink.classList.add('active');
         strip.style.display = 'flex';
       }
 
@@ -530,9 +565,9 @@
         else deactivateAiTab();
       });
 
-      tabsBar.addEventListener('click', function (e) {
+      tabHost.addEventListener('click', function (e) {
         if (!e.target.closest('#ie-ribbon-tab-ai')) {
-          prevActiveTab = null; // Let the newly clicked tab keep its own .active class
+          prevActiveTab = null;
           deactivateAiTab();
         }
       }, true);
