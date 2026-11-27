@@ -2,8 +2,8 @@
 # and published to ghcr.io/ieenterprises/ieworkspace:main
 FROM ghcr.io/leag1234/elixiroffice-server:beta1.1
 
-# 1. Start page / PWA brand assets (round logo, favicon, manifest, icons)
-RUN mkdir -p /var/www/elixiroffice/ieworkspace-brand
+# 1. Start page / PWA brand assets (round logo, favicon, manifest, icons, badged editor favicons)
+RUN mkdir -p /var/www/elixiroffice/ieworkspace-brand/favicons
 COPY branding/example/nodejs/public/elixir/brand/logo.svg \
      branding/example/nodejs/public/elixir/brand/favicon.svg \
      branding/example/nodejs/public/elixir/brand/manifest.webmanifest \
@@ -12,6 +12,11 @@ COPY branding/example/nodejs/public/elixir/brand/logo.svg \
      branding/example/nodejs/public/elixir/brand/icon-maskable-512.png \
      branding/example/nodejs/public/elixir/brand/download-menu.js \
      /var/www/elixiroffice/ieworkspace-brand/
+COPY branding/example/nodejs/public/elixir/brand/favicons/word.ico \
+     branding/example/nodejs/public/elixir/brand/favicons/cell.ico \
+     branding/example/nodejs/public/elixir/brand/favicons/slide.ico \
+     branding/example/nodejs/public/elixir/brand/favicons/pdf.ico \
+     /var/www/elixiroffice/ieworkspace-brand/favicons/
 
 # 2. Editor header, about, embed, and welcome logos (desktop + mobile)
 COPY branding/web-apps/theme/elixiroffice/assets/img/header/logo_light.svg \
