@@ -445,11 +445,31 @@
       }
 
       // 2. Unified native-looking "ieWorkspace AI" ribbon tab across ALL 4 editors (Word, Excel, Presentation, AND PDF)!
-      if (doc.getElementById('ie-ribbon-tab-ai')) return;
-
-      // Find the ribbon tab strip universally across Word, Excel, Presentation, and PDF by locating the Home/View tab
       var toolbarEl = doc.querySelector('#toolbar, .toolbar, .box-tabs');
       if (!toolbarEl) return;
+
+      // Always keep Word's legacy built-in Elixir / ieWorkspace AI tab hidden (even if Word unhides it after API key load!)
+      function hideLegacyAiTabs(host) {
+        if (!host) return;
+        var kids = host.children;
+        for (var s = 0; s < kids.length; s++) {
+          var sib = kids[s];
+          if (sib.id === 'ie-ribbon-tab-ai') continue;
+          var stxt = (sib.textContent || '').replace(/\s+/g, ' ').trim();
+          if (/^(Elixir|ieWorkspace AI)$/i.test(stxt)) {
+            sib.style.setProperty('display', 'none', 'important');
+            sib.setAttribute('data-ie-hidden-legacy-tab', '1');
+          }
+        }
+      }
+
+      var existingOurTab = doc.getElementById('ie-ribbon-tab-ai');
+      if (existingOurTab) {
+        hideLegacyAiTabs(existingOurTab.parentElement);
+        return;
+      }
+
+      // Find the ribbon tab strip universally across Word, Excel, Presentation, and PDF by locating the Home/View tab
       var refTabItem = null;
       var candidates = toolbarEl.querySelectorAll('li, a, button');
       for (var c = 0; c < candidates.length; c++) {
@@ -466,18 +486,7 @@
       if (!refTabItem || !refTabItem.parentElement) return;
 
       var tabHost = refTabItem.parentElement;
-
-      // In Word, hide the legacy built-in Elixir / ieWorkspace AI tab so all 4 editors use the exact same unified tab
-      var siblingLis = tabHost.children;
-      for (var s = 0; s < siblingLis.length; s++) {
-        var sib = siblingLis[s];
-        if (sib.id === 'ie-ribbon-tab-ai') continue;
-        var stxt = (sib.textContent || '').replace(/\s+/g, ' ').trim();
-        if (/^(Elixir|ieWorkspace AI)$/i.test(stxt)) {
-          sib.style.display = 'none';
-          sib.setAttribute('data-ie-hidden-legacy-tab', '1');
-        }
-      }
+      hideLegacyAiTabs(tabHost);
 
       // Clone the exact sibling tab (e.g. View) so font, spacing, and SINGLE active underline match 100% natively!
       var li = refTabItem.cloneNode(true);
