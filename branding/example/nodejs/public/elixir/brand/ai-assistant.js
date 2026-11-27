@@ -722,21 +722,21 @@
       for (var i = 0; i < menus.length; i++) {
         var menu = menus[i];
         if (menu.offsetParent === null) continue;
-        if (menu.getAttribute('data-ie-ctx-ai') === '1') continue;
+        // Check for our actual item (NOT a data attribute, because ONLYOFFICE reuses the <ul> and replaces innerHTML!)
+        if (menu.querySelector('.ie-ctx-ai-item')) continue;
+        // Skip ribbon toolbar dropdowns
+        if (menu.closest('#toolbar, .toolbar')) continue;
         var text = menu.textContent || '';
-        // Only target editor canvas context menus containing Cut/Copy/Paste, and skip if Ask ieWorkspace AI is already present
-        if (!(/\bPaste\b/i.test(text) && (/\bCopy\b/i.test(text) || /\bCut\b/i.test(text)))) continue;
-        if (/Ask\s+(ieWorkspace\s+AI|Elixir)/i.test(text)) {
-          menu.setAttribute('data-ie-ctx-ai', '1');
-          continue;
-        }
-        menu.setAttribute('data-ie-ctx-ai', '1');
+        if (!(/\b(Paste|Copy|Cut)\b/i.test(text))) continue;
+        if (/Ask\s+(ieWorkspace\s+AI|Elixir)/i.test(text)) continue;
 
-        // Find the Paste item to insert directly after it (matching Word's exact placement)
-        var pasteLi = null;
+        // Find the Paste item (or Copy/Cut fallback) to insert directly after it
+        var anchorLi = null;
         var lis = menu.children;
         for (var j = 0; j < lis.length; j++) {
-          if (/\bPaste\b/i.test(lis[j].textContent || '')) { pasteLi = lis[j]; break; }
+          var lt = lis[j].textContent || '';
+          if (/\bPaste\b/i.test(lt)) { anchorLi = lis[j]; break; }
+          if (!anchorLi && /\b(Copy|Cut)\b/i.test(lt)) anchorLi = lis[j];
         }
 
         var li = doc.createElement('li');
@@ -756,11 +756,12 @@
           e.stopPropagation();
           var rect = menu.getBoundingClientRect();
           menu.style.display = 'none';
+          try { doc.defaultView && doc.defaultView.Common && doc.defaultView.Common.UI && doc.defaultView.Common.UI.Menu && doc.defaultView.Common.UI.Menu.Manager && doc.defaultView.Common.UI.Menu.Manager.hideAll(); } catch (err) {}
           openQuickAiPopover(doc, rect.left, rect.top);
         });
 
-        if (pasteLi && pasteLi.parentNode === menu) {
-          pasteLi.insertAdjacentElement('afterend', li);
+        if (anchorLi && anchorLi.parentNode === menu) {
+          anchorLi.insertAdjacentElement('afterend', li);
         } else {
           menu.insertBefore(li, menu.firstChild);
         }
@@ -777,6 +778,12 @@
     upgradeNativeAiSettingsModal(doc, frameWin);
     attachRibbonTab(frameWin);
     enhanceContextMenus(doc);
+
+    // Re-check context menu right after any right-click in Excel, Presentation, PDF, or Word
+    doc.addEventListener('contextmenu', function () {
+      setTimeout(function () { enhanceContextMenus(doc); }, 30);
+      setTimeout(function () { enhanceContextMenus(doc); }, 120);
+    }, true);
 
     // Click/tap anywhere on empty space outside quick AI popovers closes them immediately
     doc.addEventListener('pointerdown', function (e) {
