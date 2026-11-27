@@ -224,13 +224,56 @@
     } catch (e) {}
   }
 
+  function upgradeNativeAiSettingsModal(doc, frameWin) {
+    try {
+      var selects = doc.querySelectorAll('select');
+      for (var i = 0; i < selects.length; i++) {
+        var sel = selects[i];
+        if (sel.id === 'ie-bs-provider' || sel.id === 'ie-bs-model') continue;
+        var modal = sel.closest('.elx-ai-modal, .elx-ai-settings, .modal-dialog, [role="dialog"], div');
+        // Walk up until we find the container holding "AI settings" and "Service URL"
+        var cur = sel.parentElement;
+        var host = null;
+        for (var depth = 0; depth < 8 && cur && cur !== doc.body; depth++) {
+          var txt = cur.textContent || '';
+          if (txt.indexOf('Service URL') !== -1 && txt.indexOf('API key') !== -1) {
+            host = cur;
+            if (txt.indexOf('AI settings') !== -1 || txt.indexOf('AI journal') !== -1) break;
+          }
+          cur = cur.parentElement;
+        }
+        if (!host || host.getAttribute('data-ie-modal-upgraded') === '1') continue;
+        host.setAttribute('data-ie-modal-upgraded', '1');
+
+        // Hide the legacy Provider/URL/Model/Key form nodes while preserving AI journal & Close button
+        var children = Array.prototype.slice.call(host.children);
+        var insertBeforeNode = null;
+        for (var c = 0; c < children.length; c++) {
+          var ch = children[c];
+          var ctxt = ch.textContent || '';
+          if (ctxt.indexOf('AI journal') !== -1 || /^\s*Close\s*$/i.test(ctxt)) {
+            if (!insertBeforeNode) insertBeforeNode = ch;
+            continue;
+          }
+          ch.style.display = 'none';
+        }
+
+        var panel = buildBackstageSettingsPanel(doc, frameWin, true);
+        if (insertBeforeNode) host.insertBefore(panel, insertBeforeNode);
+        else host.insertBefore(panel, host.firstChild);
+      }
+    } catch (e) {}
+  }
+
   function attachRebrandObserver(frameWin) {
     if (!frameWin || !frameWin.document || !frameWin.document.body) return;
     var doc = frameWin.document;
     if (doc.body.getAttribute('data-ie-rebrand') === '1') return;
     doc.body.setAttribute('data-ie-rebrand', '1');
     rebrandSubtree(doc.body);
+    upgradeNativeAiSettingsModal(doc, frameWin);
     var mo = new MutationObserver(function (muts) {
+      var added = false;
       for (var i = 0; i < muts.length; i++) {
         var m = muts[i];
         if (m.type === 'characterData') {
@@ -238,9 +281,11 @@
         } else if (m.type === 'attributes') {
           rebrandSubtree(m.target);
         } else if (m.addedNodes && m.addedNodes.length) {
+          added = true;
           for (var j = 0; j < m.addedNodes.length; j++) rebrandSubtree(m.addedNodes[j]);
         }
       }
+      if (added) upgradeNativeAiSettingsModal(doc, frameWin);
     });
     mo.observe(doc.body, {
       childList: true,
@@ -502,14 +547,16 @@
     }
   };
 
-  /* ---- Build File -> AI Settings UI inside editor iframe backstage ---- */
-  function buildBackstageSettingsPanel(doc) {
+  /* ---- Build File -> AI & Ribbon AI Settings UI inside editor iframe ---- */
+  function buildBackstageSettingsPanel(doc, frameWin, compact) {
     var wrap = doc.createElement('div');
-    wrap.id = 'ie-backstage-ai';
-    wrap.style.cssText = 'max-width:660px;padding:28px 36px;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#1d1d1f;';
+    wrap.id = compact ? 'ie-modal-ai' : 'ie-backstage-ai';
+    wrap.style.cssText = compact
+      ? 'padding:4px 0 16px;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#1d1d1f;'
+      : 'max-width:660px;padding:28px 36px;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#1d1d1f;';
 
     wrap.innerHTML =
-      '<h1 style="margin:0 0 8px;font-size:28px;font-weight:600;color:#1d1d1f;">ieWorkspace AI</h1>' +
+      '<h1 style="margin:0 0 8px;font-size:' + (compact ? '20px' : '28px') + ';font-weight:600;color:#1d1d1f;">' + (compact ? 'AI settings' : 'ieWorkspace AI') + '</h1>' +
       '<p style="margin:0 0 20px;font-size:14px;color:#555;line-height:1.45;">ieWorkspace AI works across Word, Excel, Presentation, and PDF. It stays off until you connect a model or sign in with OpenRouter.</p>' +
       '<div style="display:flex;flex-direction:column;gap:14px;">' +
         '<div>' +
@@ -624,15 +671,28 @@
       };
     }
 
+    function notifyNativeAI() {
+      try {
+        var fw = frameWin || getEditorFrameWin();
+        if (!fw) return;
+        fw.Common && fw.Common.NotificationCenter && fw.Common.NotificationCenter.trigger('elixir:ai-state', true);
+        var app = fw.DE || fw.SSE || fw.PE;
+        var ctrl = app && app.getController && app.getController('Common.Controllers.ElixirAI');
+        if (ctrl && ctrl.refreshState) ctrl.refreshState();
+      } catch (e) {}
+    }
+
     wrap.querySelector('#ie-bs-save').addEventListener('click', function () {
       var cfg = readForm();
       saveConfig(cfg);
+      notifyNativeAI();
       refreshFromStorage();
       statusEl.textContent = 'Saved! ieWorkspace AI is ready (' + cfg.model + ').';
     });
 
     wrap.querySelector('#ie-bs-remove').addEventListener('click', function () {
       clearConfig();
+      notifyNativeAI();
       refreshFromStorage();
       statusEl.textContent = 'Settings removed. AI is off.';
     });
@@ -698,7 +758,7 @@
       aiPanel.id = 'panel-ie-ai';
       aiPanel.className = 'content-box elx-page';
       aiPanel.style.cssText = 'display:none;overflow-y:auto;height:100%;background:#fff;';
-      aiPanel.appendChild(buildBackstageSettingsPanel(doc));
+      aiPanel.appendChild(buildBackstageSettingsPanel(doc, frameWin, false));
       ctx.appendChild(aiPanel);
     }
 
