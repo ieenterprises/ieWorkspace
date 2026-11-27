@@ -56,7 +56,16 @@
       '.ie-dl-text{display:flex;flex-direction:column;gap:2px;min-width:0;}' +
       '.ie-dl-title{font:600 13px/1.2 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#1d1d1f;}' +
       '.ie-dl-sub{font:400 11.5px/1.2 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#60656c;}' +
-      '@media (max-width:600px){.ie-dl-btn span.ie-dl-label{display:none;}.ie-dl-btn{padding:0 10px;}}';
+      '@media (max-width:600px){.ie-dl-btn span.ie-dl-label{display:none;}.ie-dl-btn{padding:0 10px;}}' +
+      '.ie-bulk-bar{display:none;align-items:center;justify-content:space-between;gap:12px;padding:8px 14px;margin:8px 0 10px;border:1px solid #cfe4f5;border-radius:8px;background:#f0f7fc;font:500 13px/1.2 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#1d1d1f;}' +
+      '.ie-bulk-bar.show{display:flex;flex-wrap:wrap;}' +
+      '.ie-bulk-actions{display:inline-flex;align-items:center;gap:8px;}' +
+      '.ie-bulk-btn{height:30px;padding:0 12px;border:1px solid #cbd5e1;border-radius:6px;background:#fff;color:#1d1d1f;font:600 12.5px/1 system-ui,sans-serif;cursor:pointer;}' +
+      '.ie-bulk-btn:hover{background:#f3f4f6;}' +
+      '.ie-bulk-btn.danger{border-color:#fca5a5;color:#b91c1c;}' +
+      '.ie-bulk-btn.danger:hover{background:#fef2f2;}' +
+      '.ie-chk-col{width:34px;text-align:center;padding:0 4px !important;}' +
+      '.ie-row-chk,.ie-all-chk{width:15px;height:15px;cursor:pointer;accent-color:#0082c9;}';
     document.head.appendChild(style);
   }
 
@@ -154,6 +163,145 @@
         setTimeout(syncBlankPdfTile, 30);
       }
     });
+
+    // Multi-select checkboxes + bulk actions (Open, Download, Delete) for Recent documents
+    function setupRecentMultiSelect() {
+      var tbody = document.getElementById('files-body');
+      if (!tbody) return;
+      var table = tbody.closest('table');
+      if (!table || table.getAttribute('data-ie-multi') === '1') return;
+      table.setAttribute('data-ie-multi', '1');
+
+      var theadRow = table.querySelector('thead tr');
+      var selectAll = null;
+      if (theadRow && !theadRow.querySelector('.ie-chk-col')) {
+        var th = document.createElement('th');
+        th.className = 'ie-chk-col';
+        th.innerHTML = '<input type="checkbox" class="ie-all-chk" aria-label="Select all documents" />';
+        theadRow.insertBefore(th, theadRow.firstChild);
+        selectAll = th.querySelector('.ie-all-chk');
+      }
+
+      var bar = document.createElement('div');
+      bar.className = 'ie-bulk-bar';
+      bar.id = 'ie-bulk-bar';
+      bar.innerHTML =
+        '<span id="ie-bulk-count">0 selected</span>' +
+        '<div class="ie-bulk-actions">' +
+          '<button type="button" class="ie-bulk-btn" data-bulk="open">Open</button>' +
+          '<button type="button" class="ie-bulk-btn" data-bulk="download">Download</button>' +
+          '<button type="button" class="ie-bulk-btn danger" data-bulk="delete">Delete</button>' +
+          '<button type="button" class="ie-bulk-btn" data-bulk="clear">Clear</button>' +
+        '</div>';
+      table.parentNode.insertBefore(bar, table);
+
+      function getRowName(tr) {
+        if (tr.dataset && tr.dataset.name) return tr.dataset.name;
+        var link = tr.querySelector('a[href*="fileName="]');
+        if (link) {
+          try {
+            var u = new URL(link.getAttribute('href'), window.location.href);
+            var fn = u.searchParams.get('fileName');
+            if (fn) return fn;
+          } catch (e) {}
+        }
+        var nameEl = tr.querySelector('.file-name, a, td:nth-child(2)');
+        return nameEl ? nameEl.textContent.trim() : '';
+      }
+
+      function getSelectedNames() {
+        var checks = tbody.querySelectorAll('.ie-row-chk:checked');
+        var names = [];
+        for (var i = 0; i < checks.length; i++) {
+          var tr = checks[i].closest('tr');
+          var n = tr ? getRowName(tr) : '';
+          if (n) names.push(n);
+        }
+        return names;
+      }
+
+      function updateBar() {
+        var names = getSelectedNames();
+        bar.querySelector('#ie-bulk-count').textContent = names.length + ' document' + (names.length === 1 ? '' : 's') + ' selected';
+        bar.classList.toggle('show', names.length > 0);
+        if (selectAll) {
+          var total = tbody.querySelectorAll('.ie-row-chk').length;
+          selectAll.checked = total > 0 && names.length === total;
+          selectAll.indeterminate = names.length > 0 && names.length < total;
+        }
+      }
+
+      function decorateRows() {
+        var rows = tbody.querySelectorAll('tr');
+        for (var i = 0; i < rows.length; i++) {
+          var tr = rows[i];
+          if (tr.querySelector('.ie-chk-col')) continue;
+          var td = document.createElement('td');
+          td.className = 'ie-chk-col';
+          var chk = document.createElement('input');
+          chk.type = 'checkbox';
+          chk.className = 'ie-row-chk';
+          chk.setAttribute('aria-label', 'Select ' + (getRowName(tr) || 'document'));
+          chk.addEventListener('click', function (e) { e.stopPropagation(); });
+          chk.addEventListener('change', updateBar);
+          td.appendChild(chk);
+          tr.insertBefore(td, tr.firstChild);
+        }
+        updateBar();
+      }
+
+      if (selectAll) {
+        selectAll.addEventListener('change', function () {
+          var checks = tbody.querySelectorAll('.ie-row-chk');
+          for (var i = 0; i < checks.length; i++) checks[i].checked = selectAll.checked;
+          updateBar();
+        });
+      }
+
+      bar.addEventListener('click', async function (e) {
+        var b = e.target && e.target.closest ? e.target.closest('button[data-bulk]') : null;
+        if (!b) return;
+        var act = b.getAttribute('data-bulk');
+        var names = getSelectedNames();
+        if (act === 'clear') {
+          var checks = tbody.querySelectorAll('.ie-row-chk');
+          for (var i = 0; i < checks.length; i++) checks[i].checked = false;
+          updateBar();
+          return;
+        }
+        if (!names.length) return;
+        if (act === 'open') {
+          names.forEach(function (n) {
+            window.open('editor?fileName=' + encodeURIComponent(n), '_blank', 'noopener');
+          });
+        } else if (act === 'download') {
+          names.forEach(function (n, idx) {
+            setTimeout(function () {
+              var a = document.createElement('a');
+              a.href = 'download?fileName=' + encodeURIComponent(n);
+              a.download = n;
+              document.body.appendChild(a);
+              a.click();
+              a.remove();
+            }, idx * 250);
+          });
+        } else if (act === 'delete') {
+          if (!window.confirm('Delete ' + names.length + ' selected document(s) permanently?')) return;
+          for (var d = 0; d < names.length; d++) {
+            try {
+              await fetch('file?filename=' + encodeURIComponent(names[d]), { method: 'DELETE' });
+            } catch (err) {}
+          }
+          window.location.reload();
+        }
+      });
+
+      decorateRows();
+      var mo = new MutationObserver(function () { decorateRows(); });
+      mo.observe(tbody, { childList: true });
+    }
+
+    setupRecentMultiSelect();
   }
 
   if (document.readyState === 'loading') {

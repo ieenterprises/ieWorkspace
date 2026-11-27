@@ -1,11 +1,14 @@
-/* ieWorkspace AI — File -> AI Settings (multi-provider + multi-model + OpenRouter OAuth PKCE)
-   and clean floating Chat Drawer across Word, Excel, Presentation, and PDF (Web, Android, Desktop). */
+/* ieWorkspace AI —
+   1. File -> AI Settings (multi-provider + multi-model + OpenRouter OAuth PKCE) across Word, Excel, Presentation & PDF
+   2. Round, movable Business-Logo AI bubble + movable floating chat window
+   3. Direct document reading (highlighted selection) & direct in-place modification across Word, Excel, Presentation & PDF */
 (function () {
   'use strict';
 
   var STORAGE_KEY = 'ieworkspace-ai-config-v1';
   var ELIXIR_KEY = 'elixir-ai-settings';
   var PKCE_VERIFIER_KEY = 'ieworkspace-or-pkce-verifier';
+  var POS_KEY = 'ieworkspace-ai-pos-v1';
 
   var PROVIDERS = [
     {
@@ -32,83 +35,49 @@
       name: 'OpenAI (ChatGPT API)',
       baseUrl: 'https://api.openai.com/v1',
       keyPlaceholder: 'sk-…',
-      models: [
-        'gpt-4.1',
-        'gpt-4.1-mini',
-        'gpt-4.1-nano',
-        'gpt-4o',
-        'gpt-4o-mini',
-        'o4-mini',
-        'o3-mini'
-      ]
+      models: ['gpt-4.1', 'gpt-4.1-mini', 'gpt-4.1-nano', 'gpt-4o', 'gpt-4o-mini', 'o4-mini', 'o3-mini']
     },
     {
       id: 'gemini',
       name: 'Google Gemini',
       baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
       keyPlaceholder: 'AIza…',
-      models: [
-        'gemini-2.5-pro',
-        'gemini-2.5-flash',
-        'gemini-2.5-flash-lite',
-        'gemini-2.0-flash'
-      ]
+      models: ['gemini-2.5-pro', 'gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash']
     },
     {
       id: 'deepseek',
       name: 'DeepSeek',
       baseUrl: 'https://api.deepseek.com/v1',
       keyPlaceholder: 'sk-…',
-      models: [
-        'deepseek-chat',
-        'deepseek-reasoner'
-      ]
+      models: ['deepseek-chat', 'deepseek-reasoner']
     },
     {
       id: 'groq',
       name: 'Groq (Fast Inference)',
       baseUrl: 'https://api.groq.com/openai/v1',
       keyPlaceholder: 'gsk_…',
-      models: [
-        'llama-3.3-70b-versatile',
-        'llama-3.1-8b-instant',
-        'deepseek-r1-distill-llama-70b',
-        'qwen-qwq-32b'
-      ]
+      models: ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant', 'deepseek-r1-distill-llama-70b', 'qwen-qwq-32b']
     },
     {
       id: 'mistral',
       name: 'Mistral AI',
       baseUrl: 'https://api.mistral.ai/v1',
       keyPlaceholder: 'Mistral API key',
-      models: [
-        'mistral-large-latest',
-        'mistral-medium-latest',
-        'mistral-small-latest',
-        'codestral-latest'
-      ]
+      models: ['mistral-large-latest', 'mistral-medium-latest', 'mistral-small-latest', 'codestral-latest']
     },
     {
       id: 'xai',
       name: 'xAI (Grok)',
       baseUrl: 'https://api.x.ai/v1',
       keyPlaceholder: 'xai-…',
-      models: [
-        'grok-3',
-        'grok-3-mini',
-        'grok-2-latest'
-      ]
+      models: ['grok-3', 'grok-3-mini', 'grok-2-latest']
     },
     {
       id: 'anthropic',
       name: 'Anthropic Claude (via OpenAI-compatible proxy)',
       baseUrl: 'https://api.anthropic.com/v1',
       keyPlaceholder: 'sk-ant-…',
-      models: [
-        'claude-sonnet-4-20250514',
-        'claude-3-7-sonnet-20250219',
-        'claude-3-5-haiku-20241022'
-      ]
+      models: ['claude-sonnet-4-20250514', 'claude-3-7-sonnet-20250219', 'claude-3-5-haiku-20241022']
     },
     {
       id: 'ollama',
@@ -116,13 +85,7 @@
       baseUrl: 'http://localhost:11434/v1',
       keyPlaceholder: 'ollama (optional for local)',
       noKeyRequired: true,
-      models: [
-        'llama3.2',
-        'qwen2.5',
-        'mistral',
-        'deepseek-r1',
-        'gemma3'
-      ]
+      models: ['llama3.2', 'qwen2.5', 'mistral', 'deepseek-r1', 'gemma3']
     },
     {
       id: 'custom',
@@ -137,7 +100,7 @@
     for (var i = 0; i < PROVIDERS.length; i++) {
       if (PROVIDERS[i].id === id) return PROVIDERS[i];
     }
-    return PROVIDERS[1]; // OpenAI fallback
+    return PROVIDERS[1];
   }
 
   function loadConfig() {
@@ -145,18 +108,12 @@
       var raw = localStorage.getItem(STORAGE_KEY);
       if (raw) return JSON.parse(raw);
     } catch (e) {}
-    return {
-      provider: 'openai',
-      baseUrl: 'https://api.openai.com/v1',
-      model: 'gpt-4.1-mini',
-      apiKey: ''
-    };
+    return { provider: 'openai', baseUrl: 'https://api.openai.com/v1', model: 'gpt-4.1-mini', apiKey: '' };
   }
 
   function saveConfig(cfg) {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(cfg));
-      // Keep native ElixirAI settings in sync for Word/Excel/Presentation built-in tools
       if (cfg && (cfg.apiKey || cfg.provider === 'ollama')) {
         localStorage.setItem(ELIXIR_KEY, JSON.stringify({
           endpoint: cfg.baseUrl,
@@ -177,7 +134,7 @@
     } catch (e) {}
   }
 
-  /* ---- OpenRouter PKCE OAuth (browser-native, no client secret exposed) ---- */
+  /* ---- OpenRouter PKCE OAuth ---- */
   function base64Url(bytes) {
     var bin = '';
     for (var i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
@@ -192,9 +149,8 @@
     var hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier));
     var challenge = base64Url(new Uint8Array(hash));
     var callback = window.location.href.split('#')[0];
-    var authUrl = 'https://openrouter.ai/auth?callback_url=' + encodeURIComponent(callback) +
+    window.location.href = 'https://openrouter.ai/auth?callback_url=' + encodeURIComponent(callback) +
       '&code_challenge=' + encodeURIComponent(challenge) + '&code_challenge_method=S256';
-    window.location.href = authUrl;
   }
 
   async function handleOpenRouterCallback() {
@@ -207,11 +163,7 @@
       var res = await fetch('https://openrouter.ai/api/v1/auth/keys', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          code: code,
-          code_verifier: verifier,
-          code_challenge_method: 'S256'
-        })
+        body: JSON.stringify({ code: code, code_verifier: verifier, code_challenge_method: 'S256' })
       });
       var data = await res.json();
       if (res.ok && data && data.key) {
@@ -229,8 +181,26 @@
     } catch (e) {}
   }
 
-  /* ---- Editor Detection & Prompts ---- */
+  /* ---- Editor Detection & Direct Asc.editor Bridge ---- */
+  function getEditorFrameWin() {
+    var frames = document.querySelectorAll('iframe');
+    for (var i = 0; i < frames.length; i++) {
+      try {
+        var w = frames[i].contentWindow;
+        if (w && w.Asc && w.Asc.editor) return w;
+      } catch (e) {}
+    }
+    return null;
+  }
+
   function detectEditorType() {
+    var w = getEditorFrameWin();
+    if (w) {
+      if (w.SSE) return 'cell';
+      if (w.PE) return 'slide';
+      if (w.PDFE) return 'pdf';
+      if (w.DE) return 'word';
+    }
     var href = (window.location.href || '').toLowerCase();
     var title = (document.title || '').toLowerCase();
     var icon = document.querySelector('link[rel="icon"]');
@@ -243,60 +213,169 @@
     return 'general';
   }
 
+  function readDocumentSelection() {
+    return new Promise(function (resolve) {
+      var w = getEditorFrameWin();
+      if (!w || !w.Asc || !w.Asc.editor) return resolve('');
+      var ed = w.Asc.editor;
+      try {
+        if (w.SSE && typeof ed.callCommand === 'function') {
+          var done = false;
+          var t = setTimeout(function () { if (!done) { done = true; resolve(''); } }, 1200);
+          ed.callCommand(
+            '(function(){var s=Api.GetActiveSheet().GetSelection();if(!s)return "";var v=s.GetValue2();return typeof v==="string"?v:JSON.stringify(v);})()',
+            true,
+            function (val) {
+              if (!done) { done = true; clearTimeout(t); resolve(val ? String(val).trim() : ''); }
+            }
+          );
+          return;
+        }
+        if (typeof ed.asc_GetSelectedText === 'function') {
+          var sel = ed.asc_GetSelectedText();
+          if (sel && String(sel).trim()) return resolve(String(sel).trim());
+        }
+      } catch (e) {}
+      resolve('');
+    });
+  }
+
+  function applyTextToDocument(text, kind) {
+    return new Promise(function (resolve) {
+      var w = getEditorFrameWin();
+      if (!w || !w.Asc || !w.Asc.editor) return resolve({ ok: false, reason: 'Editor is still loading.' });
+      var ed = w.Asc.editor;
+      var clean = String(text || '').trim();
+      if (!clean) return resolve({ ok: false, reason: 'Nothing to apply.' });
+
+      try {
+        // 1. Excel: write value or formula directly into selected cell
+        if (kind === 'cell' && typeof ed.callCommand === 'function') {
+          var firstLine = clean.split(/\r?\n/)[0].trim();
+          var valJson = JSON.stringify(firstLine);
+          var done = false;
+          var timer = setTimeout(function () { if (!done) { done = true; resolve({ ok: true, method: 'cell' }); } }, 2000);
+          ed.callCommand(
+            '(function(){var s=Api.GetActiveSheet().GetSelection();if(s){s.SetValue(' + valJson + ');return true;}return false;})()',
+            false,
+            function (res) {
+              if (!done) {
+                done = true;
+                clearTimeout(timer);
+                resolve({ ok: !!res, method: 'cell' });
+              }
+            }
+          );
+          return;
+        }
+
+        // 2. Word, PDF, and Presentation (when text is selected/cursor active): direct in-place replace/insert
+        var hasSelection = false;
+        try {
+          if (typeof ed.asc_GetSelectedText === 'function') {
+            hasSelection = String(ed.asc_GetSelectedText() || '').trim().length > 0;
+          }
+        } catch (e) {}
+
+        if (kind === 'slide' && !hasSelection && typeof ed.callCommand === 'function') {
+          var slideTextJson = JSON.stringify(clean);
+          var sDone = false;
+          var sTimer = setTimeout(function () { if (!sDone) { sDone = true; resolve({ ok: true, method: 'slide-box' }); } }, 2000);
+          ed.callCommand(
+            '(function(){var p=Api.GetPresentation();var s=p&&p.GetCurrentSlide();if(!s)return false;' +
+            'var sh=Api.CreateShape("rect",5500000,2600000,Api.CreateNoFill(),Api.CreateStroke(0,Api.CreateNoFill()));' +
+            'sh.SetPosition(1200000,1500000);var dc=sh.GetDocContent();var lines=' + slideTextJson + '.split(/\\r?\\n/);' +
+            'for(var i=0;i<lines.length;i++){var para=i===0?dc.GetElement(0):Api.CreateParagraph();para.AddText(lines[i]);if(i>0)dc.Push(para);}' +
+            's.AddObject(sh);return true;})()',
+            false,
+            function (res) {
+              if (!sDone) { sDone = true; clearTimeout(sTimer); resolve({ ok: !!res, method: 'slide-box' }); }
+            }
+          );
+          return;
+        }
+
+        if (typeof ed.asc_PasteText === 'function') {
+          ed.asc_PasteText(clean);
+          return resolve({ ok: true, method: 'paste' });
+        }
+
+        // Fallback via Word public Document Builder API
+        if (kind === 'word' && typeof ed.callCommand === 'function') {
+          var wJson = JSON.stringify(clean);
+          ed.callCommand(
+            '(function(){var d=Api.GetDocument();var p=Api.CreateParagraph();p.AddText(' + wJson + ');d.InsertContent([p]);return true;})()',
+            false,
+            function () { resolve({ ok: true, method: 'word-api' }); }
+          );
+          return;
+        }
+      } catch (err) {
+        return resolve({ ok: false, reason: err && err.message ? err.message : String(err) });
+      }
+      resolve({ ok: false, reason: 'Could not modify this selection directly. Use Copy instead.' });
+    });
+  }
+
   var PROMPTS = {
     word: {
       badge: 'Word AI',
-      system: 'You are ieWorkspace AI, an expert Word document assistant. Provide clear, well-structured text ready to paste into a Word document.',
+      editSystem: 'You are ieWorkspace AI editing a Word document directly. Return ONLY the final replacement or new plain text to insert into the document—no preamble, no markdown fences, no commentary.',
+      chatSystem: 'You are ieWorkspace AI, an expert Word document assistant.',
       quick: [
-        { label: 'Draft document', prompt: 'Draft a professional one-page document about: ' },
-        { label: 'Rewrite & polish', prompt: 'Rewrite and polish the following text for clarity and tone:\n\n' },
-        { label: 'Fix grammar', prompt: 'Fix spelling and grammar in the following text without changing its meaning:\n\n' },
-        { label: 'Summarize', prompt: 'Summarize the following text into concise bullet points:\n\n' }
+        { label: 'Rewrite selection', prompt: 'Rewrite this highlighted text to be clearer and more professional.' },
+        { label: 'Fix grammar', prompt: 'Fix spelling and grammar in this highlighted text without changing its meaning.' },
+        { label: 'Make shorter', prompt: 'Shorten this highlighted text while keeping the key points.' },
+        { label: 'Draft section', prompt: 'Draft a professional section about: ' }
       ]
     },
     cell: {
       badge: 'Excel AI',
-      system: 'You are ieWorkspace AI, an expert Excel spreadsheet assistant. Provide exact Excel formulas (starting with =), clean tables, and concise explanations.',
+      editSystem: 'You are ieWorkspace AI editing an Excel cell directly. If asked for a formula, return ONLY the single Excel formula starting with = (no backticks, no explanation). Otherwise return ONLY the concise cell value.',
+      chatSystem: 'You are ieWorkspace AI, an expert Excel spreadsheet assistant.',
       quick: [
         { label: 'Write formula', prompt: 'Write an Excel formula to: ' },
-        { label: 'Explain formula', prompt: 'Explain what this Excel formula does step by step:\n\n' },
-        { label: 'Build table', prompt: 'Create a tab-separated spreadsheet table template for: ' },
-        { label: 'Analyze data', prompt: 'Analyze these numbers and highlight key insights:\n\n' }
+        { label: 'SUM formula', prompt: 'Write a SUM formula for A1:A10' },
+        { label: 'IF formula', prompt: 'Write an IF formula that checks: ' },
+        { label: 'Clean text', prompt: 'Clean and format the selected cell text.' }
       ]
     },
     slide: {
       badge: 'Presentation AI',
-      system: 'You are ieWorkspace AI, an expert PowerPoint presentation designer. Write punchy slide titles, concise bullet points (max 5 per slide), and helpful speaker notes.',
+      editSystem: 'You are ieWorkspace AI editing a PowerPoint slide directly. Return ONLY the concise slide text/bullets to insert onto the slide—no preamble or markdown code fences.',
+      chatSystem: 'You are ieWorkspace AI, an expert PowerPoint presentation designer.',
       quick: [
-        { label: 'Slide outline', prompt: 'Create a 6-slide presentation outline (titles + 3-4 concise bullets per slide) about: ' },
-        { label: 'Speaker notes', prompt: 'Write concise, natural speaker notes for this slide:\n\n' },
-        { label: 'Shorten bullets', prompt: 'Shorten this text into crisp presentation bullet points:\n\n' },
-        { label: 'Visual layout ideas', prompt: 'Suggest visual layout and chart ideas for a slide about: ' }
+        { label: 'Rewrite slide', prompt: 'Rewrite this highlighted slide text into crisp, punchy bullets.' },
+        { label: 'Add bullets', prompt: 'Write 4 concise bullet points for a slide about: ' },
+        { label: 'Shorten text', prompt: 'Shorten this slide text so it fits cleanly on one slide.' },
+        { label: 'Speaker notes', prompt: 'Write concise speaker notes for this slide.' }
       ]
     },
     pdf: {
       badge: 'PDF AI',
-      system: 'You are ieWorkspace AI, an expert PDF document assistant. Summarize PDF excerpts accurately, extract structured facts/dates/action items, and draft clean responses.',
+      editSystem: 'You are ieWorkspace AI editing a PDF document directly. Return ONLY the clean replacement or new text to insert into the PDF—no preamble or markdown fences.',
+      chatSystem: 'You are ieWorkspace AI, an expert PDF document assistant.',
       quick: [
-        { label: 'Summarize PDF text', prompt: 'Summarize the following PDF text clearly:\n\n' },
-        { label: 'Extract key details', prompt: 'Extract key dates, names, amounts, and action items from this PDF text:\n\n' },
-        { label: 'Draft response', prompt: 'Draft a professional response based on this PDF content:\n\n' },
-        { label: 'Simplify language', prompt: 'Explain this PDF section in plain, simple English:\n\n' }
+        { label: 'Rewrite selection', prompt: 'Rewrite this highlighted PDF text clearly and concisely.' },
+        { label: 'Fix grammar', prompt: 'Fix spelling and grammar in this highlighted PDF text.' },
+        { label: 'Simplify text', prompt: 'Rewrite this highlighted PDF section in plain, simple English.' },
+        { label: 'Draft text', prompt: 'Write a short paragraph to insert into this PDF about: ' }
       ]
     },
     general: {
       badge: 'ieWorkspace AI',
-      system: 'You are ieWorkspace AI, a helpful assistant for documents, spreadsheets, presentations, and PDFs.',
+      editSystem: 'You are ieWorkspace AI editing a document directly. Return ONLY the final text to insert, with no preamble or markdown fences.',
+      chatSystem: 'You are ieWorkspace AI, a helpful assistant for documents, spreadsheets, presentations, and PDFs.',
       quick: [
-        { label: 'Draft text', prompt: 'Draft a professional text about: ' },
-        { label: 'Write Excel formula', prompt: 'Write an Excel formula to: ' },
-        { label: 'Slide outline', prompt: 'Create a presentation outline about: ' },
-        { label: 'Summarize', prompt: 'Summarize the following content:\n\n' }
+        { label: 'Rewrite selection', prompt: 'Rewrite the selected text clearly and professionally.' },
+        { label: 'Fix grammar', prompt: 'Fix spelling and grammar in the selected text.' },
+        { label: 'Draft text', prompt: 'Draft a professional section about: ' },
+        { label: 'Summarize', prompt: 'Summarize the selected text into concise bullet points.' }
       ]
     }
   };
 
-  /* ---- Build File -> AI Settings UI inside the editor iframe backstage ---- */
+  /* ---- Build File -> AI Settings UI inside editor iframe backstage ---- */
   function buildBackstageSettingsPanel(doc) {
     var wrap = doc.createElement('div');
     wrap.id = 'ie-backstage-ai';
@@ -405,9 +484,7 @@
       if (modelSel.value === '__custom__') customModelIn.focus();
     });
 
-    orBtn.addEventListener('click', function () {
-      startOpenRouterOAuth();
-    });
+    orBtn.addEventListener('click', function () { startOpenRouterOAuth(); });
 
     function readForm() {
       var p = getProvider(provSel.value);
@@ -447,11 +524,7 @@
         var res = await fetch(cfg.baseUrl + '/chat/completions', {
           method: 'POST',
           headers: headers,
-          body: JSON.stringify({
-            model: cfg.model,
-            max_tokens: 12,
-            messages: [{ role: 'user', content: 'Reply with OK' }]
-          })
+          body: JSON.stringify({ model: cfg.model, max_tokens: 12, messages: [{ role: 'user', content: 'Reply with OK' }] })
         });
         var data = await res.json();
         if (!res.ok) throw new Error((data && data.error && data.error.message) || ('HTTP ' + res.status));
@@ -466,7 +539,6 @@
     return wrap;
   }
 
-  /* ---- Hook File -> AI inside the editor iframe (Word, Excel, Presentation, PDF) ---- */
   function attachToBackstage(frameWin) {
     if (!frameWin || !frameWin.document) return false;
     var doc = frameWin.document;
@@ -476,7 +548,6 @@
     if (rail.getAttribute('data-ie-ai-hooked') === '1') return true;
     rail.setAttribute('data-ie-ai-hooked', '1');
 
-    // Ensure #fm-btn-elx-ai exists and is visible in ALL 4 editors (Word, Excel, Presentation, PDF)
     var aiBtn = doc.getElementById('fm-btn-elx-ai');
     if (!aiBtn) {
       aiBtn = doc.createElement('li');
@@ -486,25 +557,20 @@
       aiBtn.setAttribute('tabindex', '0');
       aiBtn.innerHTML = '<a href="#" style="display:flex;align-items:center;gap:10px;padding:8px 14px;text-decoration:none;color:inherit;"><span style="font-size:15px;">&#10024;</span><span>AI</span></a>';
       var optBtn = doc.getElementById('fm-btn-settings');
-      if (optBtn && optBtn.parentNode === rail) {
-        rail.insertBefore(aiBtn, optBtn);
-      } else {
-        rail.appendChild(aiBtn);
-      }
+      if (optBtn && optBtn.parentNode === rail) rail.insertBefore(aiBtn, optBtn);
+      else rail.appendChild(aiBtn);
     } else {
       aiBtn.style.display = '';
       aiBtn.hidden = false;
     }
 
-    // Create or upgrade our dedicated File -> AI settings container
     var aiPanel = doc.getElementById('panel-ie-ai');
     if (!aiPanel) {
       aiPanel = doc.createElement('div');
       aiPanel.id = 'panel-ie-ai';
       aiPanel.className = 'content-box elx-page';
       aiPanel.style.cssText = 'display:none;overflow-y:auto;height:100%;background:#fff;';
-      var settingsView = buildBackstageSettingsPanel(doc);
-      aiPanel.appendChild(settingsView);
+      aiPanel.appendChild(buildBackstageSettingsPanel(doc));
       ctx.appendChild(aiPanel);
     }
 
@@ -521,8 +587,6 @@
     }
 
     aiBtn.addEventListener('click', showAiPanel, true);
-
-    // Hide our panel when any other File menu button is clicked
     rail.addEventListener('click', function (e) {
       var li = e.target && e.target.closest ? e.target.closest('.fm-btn') : null;
       if (li && li.id !== 'fm-btn-elx-ai') {
@@ -531,7 +595,6 @@
       }
     }, true);
 
-    // Keep #fm-btn-elx-ai visible if the editor's own mode logic tries to hide it
     var mo = new MutationObserver(function () {
       if (aiBtn.style.display === 'none' || aiBtn.hidden) {
         aiBtn.style.display = '';
@@ -547,7 +610,6 @@
         setTimeout(function () { showAiPanel(); }, 80);
       } catch (e) {}
     };
-
     return true;
   }
 
@@ -558,43 +620,93 @@
       var frames = document.querySelectorAll('iframe');
       for (var i = 0; i < frames.length; i++) {
         try {
-          if (attachToBackstage(frames[i].contentWindow)) {
-            clearInterval(timer);
-            return;
-          }
+          if (attachToBackstage(frames[i].contentWindow)) { clearInterval(timer); return; }
         } catch (e) {}
       }
       if (attempts > 60) clearInterval(timer);
     }, 500);
   }
 
-  /* ---- Clean Floating Chat Drawer (NO inline settings form!) ---- */
+  /* ---- Draggable Utility (Mouse + Touch Pointer Events) ---- */
+  function makeDraggable(el, handle, onMoved, onClickIfNoDrag) {
+    var dragging = false, moved = false, startX = 0, startY = 0, origL = 0, origT = 0;
+    handle.addEventListener('pointerdown', function (e) {
+      if (e.button !== 0 && e.pointerType === 'mouse') return;
+      if (e.target && e.target.closest && e.target.closest('button,input,textarea,select,label') && handle !== el) return;
+      dragging = true;
+      moved = false;
+      startX = e.clientX;
+      startY = e.clientY;
+      var rect = el.getBoundingClientRect();
+      origL = rect.left;
+      origT = rect.top;
+      el.style.right = 'auto';
+      el.style.bottom = 'auto';
+      el.style.left = origL + 'px';
+      el.style.top = origT + 'px';
+      try { handle.setPointerCapture(e.pointerId); } catch (err) {}
+    });
+    handle.addEventListener('pointermove', function (e) {
+      if (!dragging) return;
+      var dx = e.clientX - startX, dy = e.clientY - startY;
+      if (Math.abs(dx) > 4 || Math.abs(dy) > 4) moved = true;
+      if (!moved) return;
+      var maxL = Math.max(0, window.innerWidth - el.offsetWidth);
+      var maxT = Math.max(0, window.innerHeight - el.offsetHeight);
+      var nl = Math.min(maxL, Math.max(0, origL + dx));
+      var nt = Math.min(maxT, Math.max(0, origT + dy));
+      el.style.left = nl + 'px';
+      el.style.top = nt + 'px';
+    });
+    function finish(e) {
+      if (!dragging) return;
+      dragging = false;
+      try { handle.releasePointerCapture(e.pointerId); } catch (err) {}
+      if (moved) {
+        if (onMoved) onMoved(parseFloat(el.style.left) || 0, parseFloat(el.style.top) || 0);
+      } else if (onClickIfNoDrag) {
+        onClickIfNoDrag();
+      }
+    }
+    handle.addEventListener('pointerup', finish);
+    handle.addEventListener('pointercancel', finish);
+  }
+
   function injectStyles() {
     if (document.getElementById('ie-ai-style')) return;
     var s = document.createElement('style');
     s.id = 'ie-ai-style';
     s.textContent =
-      '#ie-ai-fab{position:fixed;right:18px;bottom:34px;z-index:2147483600;display:inline-flex;align-items:center;gap:7px;height:38px;padding:0 14px;border:none;border-radius:999px;background:#0082c9;color:#fff;font:600 13px/1 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;box-shadow:0 6px 20px rgba(0,130,201,.36);cursor:pointer;transition:transform .15s,background .15s;}' +
-      '#ie-ai-fab:hover{background:#006da8;transform:translateY(-1px);}' +
-      '#ie-ai-drawer{position:fixed;top:0;right:0;bottom:0;width:370px;max-width:94vw;z-index:2147483601;background:#ffffff;color:#1d1d1f;box-shadow:-8px 0 30px rgba(0,0,0,.18);display:none;flex-direction:column;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;}' +
-      '#ie-ai-drawer.open{display:flex;}' +
-      '.ie-ai-head{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid #e5e7eb;background:#f8fafc;}' +
-      '.ie-ai-title{display:flex;align-items:center;gap:8px;font:700 14px/1.2 system-ui,sans-serif;}' +
-      '.ie-ai-pill{font:600 11px/1 system-ui,sans-serif;padding:4px 8px;border-radius:999px;background:#e6f3fb;color:#0072b1;}' +
-      '.ie-ai-iconbtn{width:28px;height:28px;border:1px solid #d1d5db;border-radius:6px;background:#fff;color:#374151;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:15px;}' +
+      '#ie-ai-fab{position:fixed;right:20px;bottom:34px;z-index:2147483600;width:54px;height:54px;padding:0;border:2.5px solid #0082c9;border-radius:50%;background:#ffffff;box-shadow:0 6px 22px rgba(0,0,0,.22);cursor:grab;display:inline-flex;align-items:center;justify-content:center;touch-action:none;user-select:none;transition:box-shadow .15s,transform .15s;}' +
+      '#ie-ai-fab:active{cursor:grabbing;}' +
+      '#ie-ai-fab:hover{box-shadow:0 8px 26px rgba(0,130,201,.42);transform:scale(1.04);}' +
+      '#ie-ai-fab img{width:100%;height:100%;border-radius:50%;object-fit:contain;pointer-events:none;}' +
+      '#ie-ai-fab .ie-spark{position:absolute;top:-4px;right:-4px;width:20px;height:20px;border-radius:50%;background:#0082c9;color:#fff;font-size:11px;display:inline-flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,.25);pointer-events:none;}' +
+      '#ie-ai-win{position:fixed;right:20px;bottom:98px;width:368px;max-width:94vw;height:490px;max-height:80vh;z-index:2147483601;background:#ffffff;color:#1d1d1f;border:1px solid rgba(0,0,0,.14);border-radius:14px;box-shadow:0 14px 40px rgba(0,0,0,.22);display:none;flex-direction:column;overflow:hidden;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;}' +
+      '#ie-ai-win.open{display:flex;}' +
+      '.ie-ai-head{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-bottom:1px solid #e5e7eb;background:#f8fafc;cursor:move;touch-action:none;user-select:none;}' +
+      '.ie-ai-title{display:flex;align-items:center;gap:8px;font:700 13.5px/1.2 system-ui,sans-serif;}' +
+      '.ie-ai-title img{width:24px;height:24px;border-radius:50%;object-fit:contain;border:1px solid #d1d5db;background:#fff;}' +
+      '.ie-ai-pill{font:600 11px/1 system-ui,sans-serif;padding:3px 8px;border-radius:999px;background:#e6f3fb;color:#0072b1;}' +
+      '.ie-ai-iconbtn{width:26px;height:26px;border:1px solid #d1d5db;border-radius:6px;background:#fff;color:#374151;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:15px;}' +
       '.ie-ai-iconbtn:hover{background:#f3f4f6;}' +
-      '.ie-ai-quick{display:flex;flex-wrap:wrap;gap:6px;padding:10px 14px;border-bottom:1px solid #eef0f3;}' +
-      '.ie-ai-chip{padding:5px 10px;border:1px solid #d0e4f2;border-radius:999px;background:#f4f9fd;color:#006da8;font:500 12px/1.2 system-ui,sans-serif;cursor:pointer;}' +
+      '.ie-ai-bar{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 12px;border-bottom:1px solid #eef0f3;background:#fbfdff;font-size:11.5px;color:#374151;}' +
+      '.ie-ai-sel-badge{display:inline-flex;align-items:center;gap:5px;color:#006da8;font-weight:600;max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}' +
+      '.ie-ai-toggle{display:inline-flex;align-items:center;gap:5px;cursor:pointer;font-weight:600;color:#1d1d1f;white-space:nowrap;}' +
+      '.ie-ai-quick{display:flex;flex-wrap:wrap;gap:5px;padding:8px 12px;border-bottom:1px solid #eef0f3;}' +
+      '.ie-ai-chip{padding:4px 9px;border:1px solid #d0e4f2;border-radius:999px;background:#f4f9fd;color:#006da8;font:500 11.5px/1.2 system-ui,sans-serif;cursor:pointer;}' +
       '.ie-ai-chip:hover{background:#e2f1fb;}' +
-      '.ie-ai-msgs{flex:1;overflow-y:auto;padding:12px 14px;display:flex;flex-direction:column;gap:10px;font-size:13px;line-height:1.45;}' +
-      '.ie-ai-msg{padding:9px 11px;border-radius:10px;white-space:pre-wrap;word-break:break-word;}' +
+      '.ie-ai-msgs{flex:1;overflow-y:auto;padding:10px 12px;display:flex;flex-direction:column;gap:8px;font-size:12.8px;line-height:1.45;}' +
+      '.ie-ai-msg{padding:8px 10px;border-radius:10px;white-space:pre-wrap;word-break:break-word;}' +
       '.ie-ai-msg.user{background:#0082c9;color:#fff;align-self:flex-end;max-width:88%;}' +
-      '.ie-ai-msg.bot{background:#f3f4f6;color:#111827;align-self:flex-start;max-width:94%;border:1px solid #e5e7eb;}' +
-      '.ie-ai-copy{margin-top:6px;padding:3px 8px;border:1px solid #cbd5e1;border-radius:5px;background:#fff;color:#374151;font-size:11px;cursor:pointer;display:inline-block;}' +
-      '.ie-ai-copy:hover{background:#eef6fb;color:#006da8;}' +
-      '.ie-ai-foot{padding:10px 12px;border-top:1px solid #e5e7eb;display:flex;gap:8px;align-items:flex-end;background:#fff;}' +
-      '#ie-ai-input{flex:1;min-height:40px;max-height:120px;resize:vertical;padding:8px 10px;border:1px solid #cbd5e1;border-radius:8px;font:13px/1.35 system-ui,sans-serif;}' +
-      '#ie-ai-send{height:38px;padding:0 14px;border:none;border-radius:8px;background:#0082c9;color:#fff;font:600 13px/1 system-ui,sans-serif;cursor:pointer;}' +
+      '.ie-ai-msg.bot{background:#f3f4f6;color:#111827;align-self:flex-start;max-width:95%;border:1px solid #e5e7eb;}' +
+      '.ie-ai-actions{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;}' +
+      '.ie-ai-act{padding:3px 9px;border:1px solid #cbd5e1;border-radius:5px;background:#fff;color:#1d1d1f;font:600 11px/1.3 system-ui,sans-serif;cursor:pointer;}' +
+      '.ie-ai-act.primary{background:#0082c9;border-color:#0082c9;color:#fff;}' +
+      '.ie-ai-act:hover{opacity:.9;}' +
+      '.ie-ai-foot{padding:8px 10px;border-top:1px solid #e5e7eb;display:flex;gap:7px;align-items:flex-end;background:#fff;}' +
+      '#ie-ai-input{flex:1;min-height:38px;max-height:110px;resize:vertical;padding:7px 9px;border:1px solid #cbd5e1;border-radius:8px;font:12.8px/1.35 system-ui,sans-serif;}' +
+      '#ie-ai-send{height:36px;padding:0 13px;border:none;border-radius:8px;background:#0082c9;color:#fff;font:600 12.5px/1 system-ui,sans-serif;cursor:pointer;}' +
       '#ie-ai-send:disabled{opacity:.55;cursor:not-allowed;}';
     document.head.appendChild(s);
   }
@@ -607,10 +719,12 @@
     injectStyles();
     startBackstageWatcher();
 
+    var logoSrc = document.getElementById('workspace') ? '/icon.png' : 'elixir/brand/icon-192.png';
     var kind = detectEditorType();
     var preset = PROMPTS[kind] || PROMPTS.general;
     var history = [];
     var serverManaged = false;
+    var lastSelection = '';
 
     fetch('/elixir-ai/config.json')
       .then(function (r) { return r.ok ? r.json() : null; })
@@ -620,32 +734,89 @@
     var fab = document.createElement('button');
     fab.id = 'ie-ai-fab';
     fab.type = 'button';
-    fab.title = 'Open ieWorkspace AI Assistant';
-    fab.innerHTML = '<span>&#10024;</span><span>ieWorkspace AI</span>';
+    fab.title = 'ieWorkspace AI (drag to move, click to open)';
+    fab.innerHTML = '<img src="' + logoSrc + '" alt="ieWorkspace AI" /><span class="ie-spark">&#10024;</span>';
 
-    var drawer = document.createElement('aside');
-    drawer.id = 'ie-ai-drawer';
-    drawer.setAttribute('aria-label', 'ieWorkspace AI Assistant');
-    drawer.innerHTML =
-      '<div class="ie-ai-head">' +
-        '<div class="ie-ai-title"><span>&#10024; ieWorkspace AI</span><span class="ie-ai-pill" id="ie-ai-badge"></span></div>' +
+    // Restore saved bubble position if within viewport
+    try {
+      var savedPos = JSON.parse(localStorage.getItem(POS_KEY) || 'null');
+      if (savedPos && typeof savedPos.x === 'number' && typeof savedPos.y === 'number') {
+        fab.style.right = 'auto';
+        fab.style.bottom = 'auto';
+        fab.style.left = Math.min(Math.max(8, savedPos.x), Math.max(8, window.innerWidth - 62)) + 'px';
+        fab.style.top = Math.min(Math.max(8, savedPos.y), Math.max(8, window.innerHeight - 62)) + 'px';
+      }
+    } catch (e) {}
+
+    var win = document.createElement('aside');
+    win.id = 'ie-ai-win';
+    win.setAttribute('aria-label', 'ieWorkspace AI Assistant');
+    win.innerHTML =
+      '<div class="ie-ai-head" id="ie-ai-drag-head" title="Drag to move anywhere">' +
+        '<div class="ie-ai-title"><img src="' + logoSrc + '" alt="" /><span>ieWorkspace AI</span><span class="ie-ai-pill" id="ie-ai-badge"></span></div>' +
         '<button type="button" class="ie-ai-iconbtn" id="ie-ai-close" title="Close">&times;</button>' +
+      '</div>' +
+      '<div class="ie-ai-bar">' +
+        '<span class="ie-ai-sel-badge" id="ie-ai-sel-status">Highlight text to edit directly</span>' +
+        '<label class="ie-ai-toggle" title="Automatically apply AI edits directly into the document"><input type="checkbox" id="ie-ai-direct" checked /> Direct edit</label>' +
       '</div>' +
       '<div class="ie-ai-quick" id="ie-ai-quick"></div>' +
       '<div class="ie-ai-msgs" id="ie-ai-msgs"></div>' +
       '<div class="ie-ai-foot">' +
-        '<textarea id="ie-ai-input" placeholder="Ask ieWorkspace AI anything…"></textarea>' +
-        '<button type="button" id="ie-ai-send">Send</button>' +
+        '<textarea id="ie-ai-input" placeholder="Describe how to modify the highlighted text or document…"></textarea>' +
+        '<button type="button" id="ie-ai-send">Apply</button>' +
       '</div>';
 
     document.body.appendChild(fab);
-    document.body.appendChild(drawer);
+    document.body.appendChild(win);
 
-    drawer.querySelector('#ie-ai-badge').textContent = preset.badge;
-    var quickBox = drawer.querySelector('#ie-ai-quick');
-    var msgsBox = drawer.querySelector('#ie-ai-msgs');
-    var inputEl = drawer.querySelector('#ie-ai-input');
-    var sendBtn = drawer.querySelector('#ie-ai-send');
+    var badgeEl = win.querySelector('#ie-ai-badge');
+    var selStatusEl = win.querySelector('#ie-ai-sel-status');
+    var directChk = win.querySelector('#ie-ai-direct');
+    var quickBox = win.querySelector('#ie-ai-quick');
+    var msgsBox = win.querySelector('#ie-ai-msgs');
+    var inputEl = win.querySelector('#ie-ai-input');
+    var sendBtn = win.querySelector('#ie-ai-send');
+
+    badgeEl.textContent = preset.badge;
+
+    function refreshSelectionBadge() {
+      kind = detectEditorType();
+      preset = PROMPTS[kind] || PROMPTS.general;
+      badgeEl.textContent = preset.badge;
+      return readDocumentSelection().then(function (sel) {
+        lastSelection = sel;
+        if (sel) {
+          selStatusEl.textContent = 'Selected: "' + (sel.length > 26 ? sel.slice(0, 26) + '…' : sel) + '"';
+        } else {
+          selStatusEl.textContent = 'Cursor mode (inserts at cursor)';
+        }
+        return sel;
+      });
+    }
+
+    directChk.addEventListener('change', function () {
+      sendBtn.textContent = directChk.checked ? 'Apply' : 'Send';
+    });
+
+    function toggleWin() {
+      var opening = !win.classList.contains('open');
+      win.classList.toggle('open');
+      if (opening) {
+        refreshSelectionBadge();
+        inputEl.focus();
+      }
+    }
+
+    makeDraggable(fab, fab, function (x, y) {
+      try { localStorage.setItem(POS_KEY, JSON.stringify({ x: x, y: y })); } catch (e) {}
+    }, toggleWin);
+
+    makeDraggable(win, win.querySelector('#ie-ai-drag-head'), null, null);
+
+    win.querySelector('#ie-ai-close').addEventListener('click', function () {
+      win.classList.remove('open');
+    });
 
     preset.quick.forEach(function (q) {
       var chip = document.createElement('button');
@@ -659,69 +830,86 @@
       quickBox.appendChild(chip);
     });
 
-    function addMsg(role, text, showOpenSettings) {
+    function addMsg(role, text, opts) {
+      opts = opts || {};
       var div = document.createElement('div');
       div.className = 'ie-ai-msg ' + (role === 'user' ? 'user' : 'bot');
       var body = document.createElement('div');
       body.textContent = text;
       div.appendChild(body);
-      if (role !== 'user') {
-        var cp = document.createElement('button');
-        cp.type = 'button';
-        cp.className = 'ie-ai-copy';
-        cp.textContent = 'Copy';
-        cp.addEventListener('click', function () {
-          navigator.clipboard.writeText(body.textContent).then(function () {
-            cp.textContent = 'Copied!';
-            setTimeout(function () { cp.textContent = 'Copy'; }, 1500);
-          }).catch(function () {});
-        });
-        div.appendChild(cp);
+
+      if (role !== 'user' && (opts.canApply || opts.showOpenSettings)) {
+        var acts = document.createElement('div');
+        acts.className = 'ie-ai-actions';
+        if (opts.canApply) {
+          var applyBtn = document.createElement('button');
+          applyBtn.type = 'button';
+          applyBtn.className = 'ie-ai-act primary';
+          applyBtn.textContent = opts.applied ? 'Applied ✓ (Re-apply)' : 'Apply to document';
+          applyBtn.addEventListener('click', async function () {
+            var res = await applyTextToDocument(body.textContent, kind);
+            applyBtn.textContent = res.ok ? 'Applied ✓' : ('Could not apply: ' + (res.reason || 'try Copy'));
+          });
+          acts.appendChild(applyBtn);
+
+          var cp = document.createElement('button');
+          cp.type = 'button';
+          cp.className = 'ie-ai-act';
+          cp.textContent = 'Copy';
+          cp.addEventListener('click', function () {
+            navigator.clipboard.writeText(body.textContent).then(function () {
+              cp.textContent = 'Copied!';
+              setTimeout(function () { cp.textContent = 'Copy'; }, 1500);
+            }).catch(function () {});
+          });
+          acts.appendChild(cp);
+        }
+        if (opts.showOpenSettings) {
+          var openBtn = document.createElement('button');
+          openBtn.type = 'button';
+          openBtn.className = 'ie-ai-act primary';
+          openBtn.textContent = 'Open File → AI Settings';
+          openBtn.addEventListener('click', function () {
+            win.classList.remove('open');
+            if (typeof window._ieOpenFileAI === 'function') window._ieOpenFileAI();
+          });
+          acts.appendChild(openBtn);
+        }
+        div.appendChild(acts);
       }
-      if (showOpenSettings) {
-        var openBtn = document.createElement('button');
-        openBtn.type = 'button';
-        openBtn.className = 'ie-ai-copy';
-        openBtn.style.marginLeft = '6px';
-        openBtn.textContent = 'Open File → AI Settings';
-        openBtn.addEventListener('click', function () {
-          drawer.classList.remove('open');
-          if (typeof window._ieOpenFileAI === 'function') window._ieOpenFileAI();
-        });
-        div.appendChild(openBtn);
-      }
+
       msgsBox.appendChild(div);
       msgsBox.scrollTop = msgsBox.scrollHeight;
-      return body;
+      return { div: div, body: body };
     }
 
-    addMsg('bot', 'Hi! I am ieWorkspace AI (' + preset.badge + '). Pick a quick action above or type a request. Configure your AI provider & model in File → AI.');
-
-    fab.addEventListener('click', function () {
-      drawer.classList.toggle('open');
-      if (drawer.classList.contains('open')) inputEl.focus();
-    });
-    drawer.querySelector('#ie-ai-close').addEventListener('click', function () {
-      drawer.classList.remove('open');
-    });
+    addMsg('bot', 'Highlight any text or cell in your document, tell me how to change it, and I will modify it directly (press Ctrl+Z anytime to undo). Drag my round logo or this header anywhere on screen!');
 
     async function send() {
-      var text = inputEl.value.trim();
-      if (!text) return;
+      var instruction = inputEl.value.trim();
+      if (!instruction) return;
       inputEl.value = '';
-      addMsg('user', text);
+
+      var sel = await refreshSelectionBadge();
+      addMsg('user', instruction + (sel ? '\n[Selection: "' + (sel.length > 60 ? sel.slice(0, 60) + '…' : sel) + '"]' : ''));
 
       var cfg = loadConfig();
       var p = getProvider(cfg.provider || 'openai');
       var useManaged = serverManaged && !cfg.apiKey && !p.noKeyRequired;
 
       if (!useManaged && !cfg.apiKey && !p.noKeyRequired) {
-        addMsg('bot', 'No AI provider is configured yet. Open File → AI to choose a provider (OpenAI, Gemini, DeepSeek, OpenRouter, Groq, Mistral, xAI, Ollama…) or sign in with OpenRouter.', true);
+        addMsg('bot', 'No AI provider is configured yet. Open File → AI to choose a provider or sign in with OpenRouter.', { showOpenSettings: true });
         return;
       }
 
-      history.push({ role: 'user', content: text });
-      var outBody = addMsg('bot', 'Thinking…');
+      var directMode = directChk.checked;
+      var sysPrompt = directMode ? preset.editSystem : preset.chatSystem;
+      var userContent = sel
+        ? ('Selected document text:\n"""\n' + sel + '\n"""\n\nInstruction: ' + instruction)
+        : instruction;
+
+      history.push({ role: 'user', content: userContent });
+      var thinking = addMsg('bot', directMode ? 'Editing document…' : 'Thinking…');
       sendBtn.disabled = true;
 
       try {
@@ -734,18 +922,26 @@
           headers: headers,
           body: JSON.stringify({
             model: cfg.model || p.models[0],
-            messages: [{ role: 'system', content: preset.system }].concat(history.slice(-10))
+            messages: [{ role: 'system', content: sysPrompt }].concat(history.slice(-8))
           })
         });
         var data = await res.json();
-        if (!res.ok) {
-          throw new Error((data && data.error && data.error.message) || ('HTTP ' + res.status));
-        }
-        var reply = (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || 'No response received.';
+        if (!res.ok) throw new Error((data && data.error && data.error.message) || ('HTTP ' + res.status));
+        var reply = (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || '';
+        reply = reply.replace(/^```[a-z]*\r?\n?/i, '').replace(/\r?\n?```$/i, '').trim();
         history.push({ role: 'assistant', content: reply });
-        outBody.textContent = reply;
+
+        var applied = false;
+        if (directMode && reply) {
+          var applyRes = await applyTextToDocument(reply, kind);
+          applied = !!applyRes.ok;
+        }
+
+        // Replace thinking bubble with final message + Apply/Copy controls
+        thinking.div.remove();
+        addMsg('bot', reply || 'No response received.', { canApply: true, applied: applied });
       } catch (err) {
-        outBody.textContent = 'AI request failed: ' + (err && err.message ? err.message : String(err));
+        thinking.body.textContent = 'AI request failed: ' + (err && err.message ? err.message : String(err));
       } finally {
         sendBtn.disabled = false;
         msgsBox.scrollTop = msgsBox.scrollHeight;
