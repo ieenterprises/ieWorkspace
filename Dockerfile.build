@@ -11,6 +11,7 @@ COPY branding/example/nodejs/public/elixir/brand/logo.svg \
      branding/example/nodejs/public/elixir/brand/icon-512.png \
      branding/example/nodejs/public/elixir/brand/icon-maskable-512.png \
      branding/example/nodejs/public/elixir/brand/download-menu.js \
+     branding/example/nodejs/public/elixir/brand/ai-assistant.js \
      /var/www/elixiroffice/ieworkspace-brand/
 COPY branding/example/nodejs/public/elixir/brand/favicons/word.ico \
      branding/example/nodejs/public/elixir/brand/favicons/cell.ico \

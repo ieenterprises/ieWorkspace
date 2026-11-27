@@ -136,6 +136,24 @@
     wrap.appendChild(btn);
     wrap.appendChild(menu);
     account.insertBefore(wrap, account.firstChild);
+
+    // Also keep "Blank PDF form" visible under Start new on Home & New views
+    function syncBlankPdfTile() {
+      var pdfTile = document.querySelector('#tiles .tile-blank[data-type="pdf"]');
+      if (!pdfTile) return;
+      var h = (window.location.hash || '#home').toLowerCase();
+      if (h === '' || h === '#' || h === '#home' || h === '#new' || h === '#pdf') {
+        pdfTile.hidden = false;
+        pdfTile.style.display = '';
+      }
+    }
+    syncBlankPdfTile();
+    window.addEventListener('hashchange', function () { setTimeout(syncBlankPdfTile, 30); });
+    document.addEventListener('click', function (e) {
+      if (e.target && e.target.closest && e.target.closest('.rail-item')) {
+        setTimeout(syncBlankPdfTile, 30);
+      }
+    });
   }
 
   if (document.readyState === 'loading') {
