@@ -14,17 +14,45 @@
   var lastModalIntent = 'settings'; // 'settings' or 'journal'
 
   function loadJournal() {
-    try { return JSON.parse(localStorage.getItem(JOURNAL_KEY) || '[]'); } catch (e) { return []; }
+    var combined = [];
+    try {
+      var ieList = JSON.parse(localStorage.getItem(JOURNAL_KEY) || '[]');
+      if (Array.isArray(ieList)) combined = combined.concat(ieList);
+    } catch (e) {}
+    try {
+      // Also include any entries from Word's native Elixir AI journal so nothing is lost
+      var nativeRaw = localStorage.getItem('elixir-ai-journal');
+      if (nativeRaw) {
+        var nList = JSON.parse(nativeRaw);
+        if (Array.isArray(nList)) {
+          nList.forEach(function (item) {
+            combined.push({
+              when: item.time || item.when || (item.ts ? new Date(item.ts).toLocaleString() : ''),
+              editor: item.editor || 'Word AI',
+              model: item.model || '',
+              instruction: item.instruction || item.prompt || '',
+              result: item.result || item.status || ''
+            });
+          });
+        }
+      }
+    } catch (e) {}
+    return combined;
   }
   function appendJournal(entry) {
     try {
-      var list = loadJournal();
+      var list = [];
+      try { list = JSON.parse(localStorage.getItem(JOURNAL_KEY) || '[]'); } catch (e) {}
+      if (!Array.isArray(list)) list = [];
       list.unshift(entry);
       localStorage.setItem(JOURNAL_KEY, JSON.stringify(list.slice(0, 100)));
     } catch (e) {}
   }
   function clearJournal() {
-    try { localStorage.removeItem(JOURNAL_KEY); } catch (e) {}
+    try {
+      localStorage.removeItem(JOURNAL_KEY);
+      localStorage.removeItem('elixir-ai-journal');
+    } catch (e) {}
   }
 
   var PROVIDERS = [
@@ -373,19 +401,32 @@
       var doc = frameWin && frameWin.document;
       if (!doc || !doc.body) return;
 
-      // 1. Hook native Word ribbon buttons: toggle Ask ieWorkspace AI bar on repeat click, and separate AI settings vs AI journal
+      // 1. Hook ribbon buttons across ALL editors (including Word!):
+      //    - "AI settings" ALWAYS opens ONLY the Settings modal
+      //    - "AI journal"  ALWAYS opens ONLY the Journal modal
+      //    - "Ask ieWorkspace AI" toggles the Ask bar closed on repeat click
       if (!doc.body.getAttribute('data-ie-ribbon-clicks')) {
         doc.body.setAttribute('data-ie-ribbon-clicks', '1');
         doc.body.addEventListener('click', function (e) {
           var btn = e.target && e.target.closest ? e.target.closest('button, .btn, [role="button"], li, a') : null;
-          if (!btn) return;
-          var label = (btn.textContent || btn.getAttribute('title') || btn.getAttribute('aria-label') || '').trim();
+          if (!btn || btn.getAttribute('data-ie-custom-tab-btn')) return;
+          if (btn.closest('#ie-standalone-modal-bg, #ie-backstage-ai')) return;
+          var label = (btn.textContent || btn.getAttribute('title') || btn.getAttribute('aria-label') || '').replace(/\s+/g, ' ').trim();
           if (/^AI\s+journal$/i.test(label)) {
-            lastModalIntent = 'journal';
-          } else if (/^AI\s+settings$/i.test(label)) {
-            lastModalIntent = 'settings';
-          } else if (/^Ask\s+ieWorkspace\s+AI$/i.test(label) && !btn.getAttribute('data-ie-custom-tab-btn')) {
-            // Toggle native bottom Ask bar closed if it is already visible!
+            e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+            openStandaloneModal(doc, frameWin, 'journal');
+            return;
+          }
+          if (/^AI\s+settings$/i.test(label)) {
+            e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+            openStandaloneModal(doc, frameWin, 'settings');
+            return;
+          }
+          if (/^Ask\s+ieWorkspace\s+AI$/i.test(label)) {
             var bars = doc.querySelectorAll('.elx-ai-bar, [class*="elixir-ai"], [class*="elx-ai"]');
             for (var i = 0; i < bars.length; i++) {
               var b = bars[i];
@@ -403,11 +444,10 @@
         }, true);
       }
 
-      // 2. If this editor (Excel, Presentation, PDF) has no "ieWorkspace AI" ribbon tab, inject one matching Word!
+      // 2. If this editor (Excel, Presentation, PDF) has no "ieWorkspace AI" ribbon tab, inject a native-looking tab inside the ribbon!
       var tabsBar = doc.querySelector('#toolbar .ribtab ul, .toolbar .tabs, ul.ribtab, .ribtab');
       if (!tabsBar || doc.getElementById('ie-ribbon-tab-ai')) return;
 
-      // Check if an AI tab already exists (e.g. Word)
       var existingTabs = tabsBar.querySelectorAll('a, li, button');
       for (var t = 0; t < existingTabs.length; t++) {
         if (/^(Elixir|ieWorkspace AI)$/i.test((existingTabs[t].textContent || '').trim())) return;
@@ -421,56 +461,86 @@
       li.textContent = 'ieWorkspace AI';
       tabHost.appendChild(li);
 
-      // Ribbon panel container matching Word's Ask ieWorkspace AI / AI settings / AI journal strip
-      var toolbarEl = doc.querySelector('#toolbar, .toolbar, .box-tabs') || tabsBar.parentElement;
+      // Mount INSIDE the ribbon's own panel container (replacing the active tab's buttons in-place, never dropping down below the ribbon!)
+      var panelHost =
+        doc.querySelector('#toolbar .box-panels, #toolbar .toolbar-panels, #toolbar .panels, .toolbar .box-panels, .toolbar .panels') ||
+        (doc.querySelector('#toolbar section.panel, .toolbar section.panel') && doc.querySelector('#toolbar section.panel, .toolbar section.panel').parentElement) ||
+        doc.querySelector('#toolbar, .toolbar');
+
       var strip = doc.createElement('div');
       strip.id = 'ie-ribbon-ai-strip';
-      strip.style.cssText = 'display:none;position:absolute;left:0;right:0;top:100%;z-index:2000;height:82px;background:#f8fafc;border-bottom:1px solid #d1d5db;box-shadow:0 4px 12px rgba(0,0,0,.08);padding:6px 16px;align-items:center;gap:14px;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;';
+      strip.style.cssText = 'display:none;position:absolute;inset:0;z-index:500;background:#ffffff;padding:4px 16px;align-items:center;gap:12px;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;box-sizing:border-box;';
       strip.innerHTML =
-        '<button type="button" data-ie-custom-tab-btn="ask" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;height:66px;padding:6px 14px;border:1px solid transparent;border-radius:6px;background:transparent;cursor:pointer;color:#1d1d1f;font-size:12px;">' +
+        '<button type="button" data-ie-custom-tab-btn="ask" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;height:66px;padding:6px 14px;border:1px solid transparent;border-radius:6px;background:transparent;cursor:pointer;color:#1d1d1f;font-size:12px;line-height:1.2;">' +
           '<span style="font-size:20px;line-height:1;">&#10024;</span><span>Ask<br/>ieWorkspace AI</span>' +
         '</button>' +
-        '<div style="width:1px;height:48px;background:#d1d5db;"></div>' +
-        '<button type="button" data-ie-custom-tab-btn="settings" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;height:66px;padding:6px 14px;border:1px solid transparent;border-radius:6px;background:transparent;cursor:pointer;color:#1d1d1f;font-size:12px;">' +
+        '<div style="width:1px;height:48px;background:#e5e7eb;"></div>' +
+        '<button type="button" data-ie-custom-tab-btn="settings" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;height:66px;padding:6px 14px;border:1px solid transparent;border-radius:6px;background:transparent;cursor:pointer;color:#1d1d1f;font-size:12px;line-height:1.2;">' +
           '<span style="font-size:19px;line-height:1;">&#9881;</span><span>AI<br/>settings</span>' +
         '</button>' +
-        '<button type="button" data-ie-custom-tab-btn="journal" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;height:66px;padding:6px 14px;border:1px solid transparent;border-radius:6px;background:transparent;cursor:pointer;color:#1d1d1f;font-size:12px;">' +
+        '<button type="button" data-ie-custom-tab-btn="journal" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;height:66px;padding:6px 14px;border:1px solid transparent;border-radius:6px;background:transparent;cursor:pointer;color:#1d1d1f;font-size:12px;line-height:1.2;">' +
           '<span style="font-size:19px;line-height:1;">&#128337;</span><span>AI<br/>journal</span>' +
         '</button>';
 
-      if (toolbarEl) {
-        if (getComputedStyle(toolbarEl).position === 'static') toolbarEl.style.position = 'relative';
-        toolbarEl.appendChild(strip);
+      if (panelHost) {
+        if (getComputedStyle(panelHost).position === 'static') panelHost.style.position = 'relative';
+        // If panelHost is the whole #toolbar (fallback), offset below the tab strip height so tabs stay visible!
+        if (panelHost.id === 'toolbar' || panelHost.classList.contains('toolbar')) {
+          var tabRect = tabsBar.getBoundingClientRect();
+          var hostRect = panelHost.getBoundingClientRect();
+          var topOffset = Math.max(28, Math.round(tabRect.bottom - hostRect.top));
+          strip.style.top = topOffset + 'px';
+        }
+        panelHost.appendChild(strip);
       }
 
-      function closeStrip() {
+      var prevActiveTab = null;
+
+      function deactivateAiTab() {
         strip.style.display = 'none';
+        li.classList.remove('active');
         li.style.borderBottomColor = 'transparent';
         li.style.color = '#1d1d1f';
+        if (prevActiveTab) {
+          prevActiveTab.classList.add('active');
+          prevActiveTab = null;
+        }
+      }
+
+      function activateAiTab() {
+        // Deactivate the currently active ribbon tab so ONLY ieWorkspace AI has the blue underline
+        var activeTabs = tabHost.querySelectorAll('.active');
+        prevActiveTab = null;
+        for (var k = 0; k < activeTabs.length; k++) {
+          if (activeTabs[k] !== li) {
+            prevActiveTab = activeTabs[k];
+            activeTabs[k].classList.remove('active');
+          }
+        }
+        li.classList.add('active');
+        li.style.borderBottomColor = '#0082c9';
+        li.style.color = '#0082c9';
+        strip.style.display = 'flex';
       }
 
       li.addEventListener('click', function (e) {
         e.preventDefault();
         e.stopPropagation();
-        var opening = strip.style.display === 'none';
-        if (opening) {
-          strip.style.display = 'flex';
-          li.style.borderBottomColor = '#0082c9';
-          li.style.color = '#0082c9';
-        } else {
-          closeStrip();
-        }
+        if (strip.style.display === 'none') activateAiTab();
+        else deactivateAiTab();
       });
 
       tabsBar.addEventListener('click', function (e) {
-        if (!e.target.closest('#ie-ribbon-tab-ai')) closeStrip();
-      });
+        if (!e.target.closest('#ie-ribbon-tab-ai')) {
+          prevActiveTab = null; // Let the newly clicked tab keep its own .active class
+          deactivateAiTab();
+        }
+      }, true);
 
       strip.addEventListener('click', function (e) {
         var b = e.target && e.target.closest ? e.target.closest('button[data-ie-custom-tab-btn]') : null;
         if (!b) return;
         var act = b.getAttribute('data-ie-custom-tab-btn');
-        closeStrip();
         if (act === 'ask') {
           if (typeof window._ieToggleAIWin === 'function') window._ieToggleAIWin();
         } else if (act === 'settings') {
