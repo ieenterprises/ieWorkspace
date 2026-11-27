@@ -1,7 +1,8 @@
 /* ieWorkspace AI —
    1. File -> AI Settings (multi-provider + multi-model + OpenRouter OAuth PKCE) across Word, Excel, Presentation & PDF
-   2. Round, movable Business-Logo AI bubble + movable floating chat window
-   3. Direct document reading (highlighted selection) & direct in-place modification across Word, Excel, Presentation & PDF */
+   2. Complete UI rebrand observer (Ask Elixir / Search or ask Elixir / Elixir tab / Type / for commands -> ieWorkspace AI)
+   3. Round, movable Business-Logo AI bubble + movable floating chat window
+   4. Smart Document-Aware Direct Editing (reads highlighted text OR full document text, performs in-place SearchAndReplace, cell edits, or inserts) */
 (function () {
   'use strict';
 
@@ -181,7 +182,76 @@
     } catch (e) {}
   }
 
-  /* ---- Editor Detection & Direct Asc.editor Bridge ---- */
+  /* ---- Runtime UI Rebrand Observer (removes every visible "Elixir" / "Ask Elixir" string in editor iframe) ---- */
+  function rebrandString(str) {
+    if (!str || !/elixir/i.test(str)) return str;
+    return str
+      .replace(/ElixirOffice/gi, 'ieWorkspace')
+      .replace(/Elixir AI/gi, 'ieWorkspace AI')
+      .replace(/Ask Elixir/g, 'Ask ieWorkspace AI')
+      .replace(/ask Elixir/g, 'ask ieWorkspace AI')
+      .replace(/\bElixir\b/g, 'ieWorkspace AI');
+  }
+
+  function rebrandSubtree(root) {
+    if (!root) return;
+    try {
+      if (root.nodeType === 3) {
+        var nv = rebrandString(root.nodeValue);
+        if (nv !== root.nodeValue) root.nodeValue = nv;
+        return;
+      }
+      if (root.nodeType !== 1 && root.nodeType !== 9) return;
+      var doc = root.nodeType === 9 ? root : root.ownerDocument;
+      var walker = doc.createTreeWalker(root, NodeFilter.SHOW_TEXT, null, false);
+      var node;
+      while ((node = walker.nextNode())) {
+        if (node.parentNode && /^(SCRIPT|STYLE)$/i.test(node.parentNode.nodeName)) continue;
+        var v = rebrandString(node.nodeValue);
+        if (v !== node.nodeValue) node.nodeValue = v;
+      }
+      var els = root.querySelectorAll ? root.querySelectorAll('[placeholder],[title],[aria-label]') : [];
+      for (var i = 0; i < els.length; i++) {
+        var el = els[i];
+        ['placeholder', 'title', 'aria-label'].forEach(function (attr) {
+          var av = el.getAttribute(attr);
+          if (av && /elixir/i.test(av)) {
+            var rv = rebrandString(av);
+            if (rv !== av) el.setAttribute(attr, rv);
+          }
+        });
+      }
+    } catch (e) {}
+  }
+
+  function attachRebrandObserver(frameWin) {
+    if (!frameWin || !frameWin.document || !frameWin.document.body) return;
+    var doc = frameWin.document;
+    if (doc.body.getAttribute('data-ie-rebrand') === '1') return;
+    doc.body.setAttribute('data-ie-rebrand', '1');
+    rebrandSubtree(doc.body);
+    var mo = new MutationObserver(function (muts) {
+      for (var i = 0; i < muts.length; i++) {
+        var m = muts[i];
+        if (m.type === 'characterData') {
+          rebrandSubtree(m.target);
+        } else if (m.type === 'attributes') {
+          rebrandSubtree(m.target);
+        } else if (m.addedNodes && m.addedNodes.length) {
+          for (var j = 0; j < m.addedNodes.length; j++) rebrandSubtree(m.addedNodes[j]);
+        }
+      }
+    });
+    mo.observe(doc.body, {
+      childList: true,
+      subtree: true,
+      characterData: true,
+      attributes: true,
+      attributeFilter: ['placeholder', 'title', 'aria-label']
+    });
+  }
+
+  /* ---- Editor Detection & Smart Document Bridge ---- */
   function getEditorFrameWin() {
     var frames = document.querySelectorAll('iframe');
     for (var i = 0; i < frames.length; i++) {
@@ -240,87 +310,140 @@
     });
   }
 
-  function applyTextToDocument(text, kind) {
+  function readDocumentContext(kind) {
     return new Promise(function (resolve) {
       var w = getEditorFrameWin();
-      if (!w || !w.Asc || !w.Asc.editor) return resolve({ ok: false, reason: 'Editor is still loading.' });
+      if (!w || !w.Asc || !w.Asc.editor || typeof w.Asc.editor.callCommand !== 'function') return resolve('');
       var ed = w.Asc.editor;
-      var clean = String(text || '').trim();
-      if (!clean) return resolve({ ok: false, reason: 'Nothing to apply.' });
+      var done = false;
+      var t = setTimeout(function () { if (!done) { done = true; resolve(''); } }, 1800);
+      var script = '';
+      if (kind === 'word') {
+        script = '(function(){try{var d=Api.GetDocument();var n=Math.min(d.GetElementsCount(),60);var out=[];for(var i=0;i<n;i++){var el=d.GetElement(i);if(el&&el.GetText){var tx=el.GetText();if(tx&&tx.trim())out.push(tx);}}return out.join("\\n").slice(0,5000);}catch(e){return "";}})()';
+      } else if (kind === 'cell') {
+        script = '(function(){try{var sh=Api.GetActiveSheet();var r=sh.GetUsedRange();if(!r)return "";return JSON.stringify(r.GetValue2()).slice(0,4000);}catch(e){return "";}})()';
+      } else if (kind === 'slide') {
+        script = '(function(){try{var s=Api.GetPresentation().GetCurrentSlide();if(!s)return "";var sh=s.GetAllShapes();var out=[];for(var i=0;i<sh.length;i++){var dc=sh[i].GetDocContent();if(dc){for(var j=0;j<dc.GetElementsCount();j++){var tx=dc.GetElement(j).GetText();if(tx&&tx.trim())out.push(tx);}}}return out.join("\\n").slice(0,4000);}catch(e){return "";}})()';
+      } else {
+        clearTimeout(t);
+        return resolve('');
+      }
+      try {
+        ed.callCommand(script, true, function (val) {
+          if (!done) { done = true; clearTimeout(t); resolve(val ? String(val).trim() : ''); }
+        });
+      } catch (e) {
+        if (!done) { done = true; clearTimeout(t); resolve(''); }
+      }
+    });
+  }
+
+  function executeEditAction(actionObj, kind) {
+    return new Promise(function (resolve) {
+      var w = getEditorFrameWin();
+      if (!w || !w.Asc || !w.Asc.editor) return resolve({ ok: false, summary: 'Editor is still loading.' });
+      var ed = w.Asc.editor;
 
       try {
-        // 1. Excel: write value or formula directly into selected cell
+        // Action 1: Search & Replace in-place inside Word (works even when user didn't highlight!)
+        if (actionObj.action === 'replace' && actionObj.find && typeof ed.callCommand === 'function') {
+          var findStr = String(actionObj.find);
+          var repStr = String(actionObj.replace != null ? actionObj.replace : '');
+          if (kind === 'word') {
+            var done = false;
+            var t = setTimeout(function () { if (!done) { done = true; resolve({ ok: true, summary: 'Replaced "' + findStr + '" with "' + repStr + '".' }); } }, 2000);
+            ed.callCommand(
+              '(function(){var d=Api.GetDocument();d.SearchAndReplace({searchString:' + JSON.stringify(findStr) + ',replaceString:' + JSON.stringify(repStr) + ',matchCase:false});return true;})()',
+              false,
+              function () {
+                if (!done) { done = true; clearTimeout(t); resolve({ ok: true, summary: 'Replaced "' + findStr + '" with "' + repStr + '".' }); }
+              }
+            );
+            return;
+          }
+          if (kind === 'cell') {
+            var cDone = false;
+            var ct = setTimeout(function () { if (!cDone) { cDone = true; resolve({ ok: true, summary: 'Replaced "' + findStr + '" with "' + repStr + '".' }); } }, 2000);
+            ed.callCommand(
+              '(function(){var sh=Api.GetActiveSheet();var r=sh.GetUsedRange();if(r)r.Replace({What:' + JSON.stringify(findStr) + ',Replacement:' + JSON.stringify(repStr) + ',MatchCase:false});return true;})()',
+              false,
+              function () {
+                if (!cDone) { cDone = true; clearTimeout(ct); resolve({ ok: true, summary: 'Replaced "' + findStr + '" with "' + repStr + '".' }); }
+              }
+            );
+            return;
+          }
+        }
+
+        // Action 2: Replace highlighted selection or insert text at cursor
+        var text = String(actionObj.text != null ? actionObj.text : (actionObj.replace != null ? actionObj.replace : '')).trim();
+        if (!text) return resolve({ ok: false, summary: 'Nothing to apply.' });
+
         if (kind === 'cell' && typeof ed.callCommand === 'function') {
-          var firstLine = clean.split(/\r?\n/)[0].trim();
-          var valJson = JSON.stringify(firstLine);
-          var done = false;
-          var timer = setTimeout(function () { if (!done) { done = true; resolve({ ok: true, method: 'cell' }); } }, 2000);
+          var firstLine = text.split(/\r?\n/)[0].trim();
+          var xDone = false;
+          var xt = setTimeout(function () { if (!xDone) { xDone = true; resolve({ ok: true, summary: 'Updated selected cell.' }); } }, 2000);
           ed.callCommand(
-            '(function(){var s=Api.GetActiveSheet().GetSelection();if(s){s.SetValue(' + valJson + ');return true;}return false;})()',
+            '(function(){var s=Api.GetActiveSheet().GetSelection();if(s){s.SetValue(' + JSON.stringify(firstLine) + ');return true;}return false;})()',
             false,
             function (res) {
-              if (!done) {
-                done = true;
-                clearTimeout(timer);
-                resolve({ ok: !!res, method: 'cell' });
-              }
+              if (!xDone) { xDone = true; clearTimeout(xt); resolve({ ok: !!res, summary: res ? 'Updated selected cell.' : 'Select a cell first.' }); }
             }
           );
           return;
         }
 
-        // 2. Word, PDF, and Presentation (when text is selected/cursor active): direct in-place replace/insert
-        var hasSelection = false;
+        var hasSel = false;
         try {
-          if (typeof ed.asc_GetSelectedText === 'function') {
-            hasSelection = String(ed.asc_GetSelectedText() || '').trim().length > 0;
-          }
+          if (typeof ed.asc_GetSelectedText === 'function') hasSel = String(ed.asc_GetSelectedText() || '').trim().length > 0;
         } catch (e) {}
 
-        if (kind === 'slide' && !hasSelection && typeof ed.callCommand === 'function') {
-          var slideTextJson = JSON.stringify(clean);
+        if (kind === 'slide' && !hasSel && typeof ed.callCommand === 'function') {
           var sDone = false;
-          var sTimer = setTimeout(function () { if (!sDone) { sDone = true; resolve({ ok: true, method: 'slide-box' }); } }, 2000);
+          var st = setTimeout(function () { if (!sDone) { sDone = true; resolve({ ok: true, summary: 'Added text to current slide.' }); } }, 2000);
           ed.callCommand(
             '(function(){var p=Api.GetPresentation();var s=p&&p.GetCurrentSlide();if(!s)return false;' +
             'var sh=Api.CreateShape("rect",5500000,2600000,Api.CreateNoFill(),Api.CreateStroke(0,Api.CreateNoFill()));' +
-            'sh.SetPosition(1200000,1500000);var dc=sh.GetDocContent();var lines=' + slideTextJson + '.split(/\\r?\\n/);' +
+            'sh.SetPosition(1200000,1500000);var dc=sh.GetDocContent();var lines=' + JSON.stringify(text) + '.split(/\\r?\\n/);' +
             'for(var i=0;i<lines.length;i++){var para=i===0?dc.GetElement(0):Api.CreateParagraph();para.AddText(lines[i]);if(i>0)dc.Push(para);}' +
             's.AddObject(sh);return true;})()',
             false,
             function (res) {
-              if (!sDone) { sDone = true; clearTimeout(sTimer); resolve({ ok: !!res, method: 'slide-box' }); }
+              if (!sDone) { sDone = true; clearTimeout(st); resolve({ ok: !!res, summary: 'Added text to current slide.' }); }
             }
           );
           return;
         }
 
         if (typeof ed.asc_PasteText === 'function') {
-          ed.asc_PasteText(clean);
-          return resolve({ ok: true, method: 'paste' });
-        }
-
-        // Fallback via Word public Document Builder API
-        if (kind === 'word' && typeof ed.callCommand === 'function') {
-          var wJson = JSON.stringify(clean);
-          ed.callCommand(
-            '(function(){var d=Api.GetDocument();var p=Api.CreateParagraph();p.AddText(' + wJson + ');d.InsertContent([p]);return true;})()',
-            false,
-            function () { resolve({ ok: true, method: 'word-api' }); }
-          );
-          return;
+          ed.asc_PasteText(text);
+          return resolve({ ok: true, summary: hasSel ? 'Replaced highlighted selection.' : 'Inserted into document.' });
         }
       } catch (err) {
-        return resolve({ ok: false, reason: err && err.message ? err.message : String(err) });
+        return resolve({ ok: false, summary: err && err.message ? err.message : String(err) });
       }
-      resolve({ ok: false, reason: 'Could not modify this selection directly. Use Copy instead.' });
+      resolve({ ok: false, summary: 'Could not modify directly. Use Copy instead.' });
     });
+  }
+
+  function parseAiAction(rawReply, hasSelection) {
+    var trimmed = String(rawReply || '').trim().replace(/^```(?:json)?\r?\n?/i, '').replace(/\r?\n?```$/i, '').trim();
+    if (!hasSelection && trimmed.charAt(0) === '{') {
+      try {
+        var obj = JSON.parse(trimmed);
+        if (obj && (obj.action === 'replace' || obj.action === 'insert' || obj.action === 'reply')) {
+          return obj;
+        }
+      } catch (e) {}
+    }
+    return { action: 'insert', text: trimmed };
   }
 
   var PROMPTS = {
     word: {
       badge: 'Word AI',
-      editSystem: 'You are ieWorkspace AI editing a Word document directly. Return ONLY the final replacement or new plain text to insert into the document—no preamble, no markdown fences, no commentary.',
+      selectionSystem: 'You are ieWorkspace AI modifying a highlighted section of a Word document. Return ONLY the exact replacement text to substitute for the highlighted selection—no quotes, no preamble, no markdown fences.',
+      docSystem: 'You are ieWorkspace AI editing a Word document. You are given the current document text and a user instruction. Respond with a single JSON object (no markdown fences):\n- If the user wants to change/replace specific word(s) or a phrase in the document: {"action":"replace","find":"exact existing text from document","replace":"new replacement text"}\n- If the user wants to write/draft/add new content: {"action":"insert","text":"new text to insert"}\n- If the user is only asking a question: {"action":"reply","text":"your answer"}',
       chatSystem: 'You are ieWorkspace AI, an expert Word document assistant.',
       quick: [
         { label: 'Rewrite selection', prompt: 'Rewrite this highlighted text to be clearer and more professional.' },
@@ -331,7 +454,8 @@
     },
     cell: {
       badge: 'Excel AI',
-      editSystem: 'You are ieWorkspace AI editing an Excel cell directly. If asked for a formula, return ONLY the single Excel formula starting with = (no backticks, no explanation). Otherwise return ONLY the concise cell value.',
+      selectionSystem: 'You are ieWorkspace AI editing an Excel cell directly. If asked for a formula, return ONLY the single Excel formula starting with = (no backticks, no explanation). Otherwise return ONLY the concise cell value.',
+      docSystem: 'You are ieWorkspace AI editing an Excel spreadsheet. Respond with a single JSON object (no markdown fences):\n- To replace text across the sheet: {"action":"replace","find":"exact text","replace":"new text"}\n- To set a formula or value in the active cell: {"action":"insert","text":"=SUM(A1:A10) or value"}\n- To answer a question: {"action":"reply","text":"your answer"}',
       chatSystem: 'You are ieWorkspace AI, an expert Excel spreadsheet assistant.',
       quick: [
         { label: 'Write formula', prompt: 'Write an Excel formula to: ' },
@@ -342,7 +466,8 @@
     },
     slide: {
       badge: 'Presentation AI',
-      editSystem: 'You are ieWorkspace AI editing a PowerPoint slide directly. Return ONLY the concise slide text/bullets to insert onto the slide—no preamble or markdown code fences.',
+      selectionSystem: 'You are ieWorkspace AI editing a highlighted section of a PowerPoint slide. Return ONLY the concise replacement text—no preamble or markdown fences.',
+      docSystem: 'You are ieWorkspace AI editing a PowerPoint slide. Respond with a single JSON object (no markdown fences):\n- To insert new slide content/bullets: {"action":"insert","text":"concise slide text"}\n- To answer a question: {"action":"reply","text":"your answer"}',
       chatSystem: 'You are ieWorkspace AI, an expert PowerPoint presentation designer.',
       quick: [
         { label: 'Rewrite slide', prompt: 'Rewrite this highlighted slide text into crisp, punchy bullets.' },
@@ -353,7 +478,8 @@
     },
     pdf: {
       badge: 'PDF AI',
-      editSystem: 'You are ieWorkspace AI editing a PDF document directly. Return ONLY the clean replacement or new text to insert into the PDF—no preamble or markdown fences.',
+      selectionSystem: 'You are ieWorkspace AI editing highlighted text in a PDF document. Return ONLY the clean replacement text—no preamble or markdown fences.',
+      docSystem: 'You are ieWorkspace AI assisting with a PDF document. Respond with a single JSON object (no markdown fences):\n- To insert new text: {"action":"insert","text":"clean text to insert"}\n- To answer a question: {"action":"reply","text":"your answer"}',
       chatSystem: 'You are ieWorkspace AI, an expert PDF document assistant.',
       quick: [
         { label: 'Rewrite selection', prompt: 'Rewrite this highlighted PDF text clearly and concisely.' },
@@ -364,7 +490,8 @@
     },
     general: {
       badge: 'ieWorkspace AI',
-      editSystem: 'You are ieWorkspace AI editing a document directly. Return ONLY the final text to insert, with no preamble or markdown fences.',
+      selectionSystem: 'You are ieWorkspace AI editing a document directly. Return ONLY the exact replacement text.',
+      docSystem: 'You are ieWorkspace AI. Respond with JSON: {"action":"insert","text":"..."} or {"action":"reply","text":"..."}',
       chatSystem: 'You are ieWorkspace AI, a helpful assistant for documents, spreadsheets, presentations, and PDFs.',
       quick: [
         { label: 'Rewrite selection', prompt: 'Rewrite the selected text clearly and professionally.' },
@@ -382,7 +509,7 @@
     wrap.style.cssText = 'max-width:660px;padding:28px 36px;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#1d1d1f;';
 
     wrap.innerHTML =
-      '<h1 style="margin:0 0 8px;font-size:28px;font-weight:600;color:#1d1d1f;">AI</h1>' +
+      '<h1 style="margin:0 0 8px;font-size:28px;font-weight:600;color:#1d1d1f;">ieWorkspace AI</h1>' +
       '<p style="margin:0 0 20px;font-size:14px;color:#555;line-height:1.45;">ieWorkspace AI works across Word, Excel, Presentation, and PDF. It stays off until you connect a model or sign in with OpenRouter.</p>' +
       '<div style="display:flex;flex-direction:column;gap:14px;">' +
         '<div>' +
@@ -541,6 +668,7 @@
 
   function attachToBackstage(frameWin) {
     if (!frameWin || !frameWin.document) return false;
+    attachRebrandObserver(frameWin);
     var doc = frameWin.document;
     var rail = doc.querySelector('.panel-menu');
     var ctx = doc.querySelector('.panel-context');
@@ -627,7 +755,7 @@
     }, 500);
   }
 
-  /* ---- Draggable Utility (Mouse + Touch Pointer Events) ---- */
+  /* ---- Draggable Utility ---- */
   function makeDraggable(el, handle, onMoved, onClickIfNoDrag) {
     var dragging = false, moved = false, startX = 0, startY = 0, origL = 0, origT = 0;
     handle.addEventListener('pointerdown', function (e) {
@@ -653,10 +781,8 @@
       if (!moved) return;
       var maxL = Math.max(0, window.innerWidth - el.offsetWidth);
       var maxT = Math.max(0, window.innerHeight - el.offsetHeight);
-      var nl = Math.min(maxL, Math.max(0, origL + dx));
-      var nt = Math.min(maxT, Math.max(0, origT + dy));
-      el.style.left = nl + 'px';
-      el.style.top = nt + 'px';
+      el.style.left = Math.min(maxL, Math.max(0, origL + dx)) + 'px';
+      el.style.top = Math.min(maxT, Math.max(0, origT + dy)) + 'px';
     });
     function finish(e) {
       if (!dragging) return;
@@ -691,7 +817,7 @@
       '.ie-ai-iconbtn{width:26px;height:26px;border:1px solid #d1d5db;border-radius:6px;background:#fff;color:#374151;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:15px;}' +
       '.ie-ai-iconbtn:hover{background:#f3f4f6;}' +
       '.ie-ai-bar{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 12px;border-bottom:1px solid #eef0f3;background:#fbfdff;font-size:11.5px;color:#374151;}' +
-      '.ie-ai-sel-badge{display:inline-flex;align-items:center;gap:5px;color:#006da8;font-weight:600;max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}' +
+      '.ie-ai-sel-badge{display:inline-flex;align-items:center;gap:5px;color:#006da8;font-weight:600;max-width:215px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}' +
       '.ie-ai-toggle{display:inline-flex;align-items:center;gap:5px;cursor:pointer;font-weight:600;color:#1d1d1f;white-space:nowrap;}' +
       '.ie-ai-quick{display:flex;flex-wrap:wrap;gap:5px;padding:8px 12px;border-bottom:1px solid #eef0f3;}' +
       '.ie-ai-chip{padding:4px 9px;border:1px solid #d0e4f2;border-radius:999px;background:#f4f9fd;color:#006da8;font:500 11.5px/1.2 system-ui,sans-serif;cursor:pointer;}' +
@@ -724,7 +850,7 @@
     var preset = PROMPTS[kind] || PROMPTS.general;
     var history = [];
     var serverManaged = false;
-    var lastSelection = '';
+    var cachedSelection = '';
 
     fetch('/elixir-ai/config.json')
       .then(function (r) { return r.ok ? r.json() : null; })
@@ -737,7 +863,6 @@
     fab.title = 'ieWorkspace AI (drag to move, click to open)';
     fab.innerHTML = '<img src="' + logoSrc + '" alt="ieWorkspace AI" /><span class="ie-spark">&#10024;</span>';
 
-    // Restore saved bubble position if within viewport
     try {
       var savedPos = JSON.parse(localStorage.getItem(POS_KEY) || 'null');
       if (savedPos && typeof savedPos.x === 'number' && typeof savedPos.y === 'number') {
@@ -757,13 +882,13 @@
         '<button type="button" class="ie-ai-iconbtn" id="ie-ai-close" title="Close">&times;</button>' +
       '</div>' +
       '<div class="ie-ai-bar">' +
-        '<span class="ie-ai-sel-badge" id="ie-ai-sel-status">Highlight text to edit directly</span>' +
+        '<span class="ie-ai-sel-badge" id="ie-ai-sel-status">Document-aware mode</span>' +
         '<label class="ie-ai-toggle" title="Automatically apply AI edits directly into the document"><input type="checkbox" id="ie-ai-direct" checked /> Direct edit</label>' +
       '</div>' +
       '<div class="ie-ai-quick" id="ie-ai-quick"></div>' +
       '<div class="ie-ai-msgs" id="ie-ai-msgs"></div>' +
       '<div class="ie-ai-foot">' +
-        '<textarea id="ie-ai-input" placeholder="Describe how to modify the highlighted text or document…"></textarea>' +
+        '<textarea id="ie-ai-input" placeholder="e.g. Change mathematical to english, or highlight text to rewrite…"></textarea>' +
         '<button type="button" id="ie-ai-send">Apply</button>' +
       '</div>';
 
@@ -785,15 +910,22 @@
       preset = PROMPTS[kind] || PROMPTS.general;
       badgeEl.textContent = preset.badge;
       return readDocumentSelection().then(function (sel) {
-        lastSelection = sel;
+        cachedSelection = sel;
         if (sel) {
           selStatusEl.textContent = 'Selected: "' + (sel.length > 26 ? sel.slice(0, 26) + '…' : sel) + '"';
         } else {
-          selStatusEl.textContent = 'Cursor mode (inserts at cursor)';
+          selStatusEl.textContent = 'Document-aware edit mode';
         }
         return sel;
       });
     }
+
+    // Keep selection fresh while the floating window is open (before focus moves to textarea)
+    setInterval(function () {
+      if (win.classList.contains('open') && document.activeElement !== inputEl) {
+        refreshSelectionBadge();
+      }
+    }, 900);
 
     directChk.addEventListener('change', function () {
       sendBtn.textContent = directChk.checked ? 'Apply' : 'Send';
@@ -838,26 +970,27 @@
       body.textContent = text;
       div.appendChild(body);
 
-      if (role !== 'user' && (opts.canApply || opts.showOpenSettings)) {
+      if (role !== 'user' && (opts.actionObj || opts.showOpenSettings)) {
         var acts = document.createElement('div');
         acts.className = 'ie-ai-actions';
-        if (opts.canApply) {
+        if (opts.actionObj && opts.actionObj.action !== 'reply') {
           var applyBtn = document.createElement('button');
           applyBtn.type = 'button';
           applyBtn.className = 'ie-ai-act primary';
           applyBtn.textContent = opts.applied ? 'Applied ✓ (Re-apply)' : 'Apply to document';
           applyBtn.addEventListener('click', async function () {
-            var res = await applyTextToDocument(body.textContent, kind);
-            applyBtn.textContent = res.ok ? 'Applied ✓' : ('Could not apply: ' + (res.reason || 'try Copy'));
+            var res = await executeEditAction(opts.actionObj, kind);
+            applyBtn.textContent = res.ok ? 'Applied ✓' : ('Could not apply: ' + (res.summary || 'try Copy'));
           });
           acts.appendChild(applyBtn);
 
+          var copyText = opts.actionObj.replace != null ? opts.actionObj.replace : (opts.actionObj.text || body.textContent);
           var cp = document.createElement('button');
           cp.type = 'button';
           cp.className = 'ie-ai-act';
           cp.textContent = 'Copy';
           cp.addEventListener('click', function () {
-            navigator.clipboard.writeText(body.textContent).then(function () {
+            navigator.clipboard.writeText(copyText).then(function () {
               cp.textContent = 'Copied!';
               setTimeout(function () { cp.textContent = 'Copy'; }, 1500);
             }).catch(function () {});
@@ -883,14 +1016,15 @@
       return { div: div, body: body };
     }
 
-    addMsg('bot', 'Highlight any text or cell in your document, tell me how to change it, and I will modify it directly (press Ctrl+Z anytime to undo). Drag my round logo or this header anywhere on screen!');
+    addMsg('bot', 'Highlight text to rewrite it, or simply ask me to edit anywhere in the document (e.g. "change mathematical to english"). Press Ctrl+Z anytime to undo!');
 
     async function send() {
       var instruction = inputEl.value.trim();
       if (!instruction) return;
       inputEl.value = '';
 
-      var sel = await refreshSelectionBadge();
+      var liveSel = await readDocumentSelection();
+      var sel = liveSel || cachedSelection;
       addMsg('user', instruction + (sel ? '\n[Selection: "' + (sel.length > 60 ? sel.slice(0, 60) + '…' : sel) + '"]' : ''));
 
       var cfg = loadConfig();
@@ -903,10 +1037,13 @@
       }
 
       var directMode = directChk.checked;
-      var sysPrompt = directMode ? preset.editSystem : preset.chatSystem;
+      var docContext = (!sel && directMode) ? await readDocumentContext(kind) : '';
+      var sysPrompt = !directMode ? preset.chatSystem : (sel ? preset.selectionSystem : preset.docSystem);
       var userContent = sel
-        ? ('Selected document text:\n"""\n' + sel + '\n"""\n\nInstruction: ' + instruction)
-        : instruction;
+        ? ('Highlighted text:\n"""\n' + sel + '\n"""\n\nInstruction: ' + instruction)
+        : (docContext
+            ? ('Current document text:\n"""\n' + docContext + '\n"""\n\nInstruction: ' + instruction)
+            : instruction);
 
       history.push({ role: 'user', content: userContent });
       var thinking = addMsg('bot', directMode ? 'Editing document…' : 'Thinking…');
@@ -922,24 +1059,31 @@
           headers: headers,
           body: JSON.stringify({
             model: cfg.model || p.models[0],
-            messages: [{ role: 'system', content: sysPrompt }].concat(history.slice(-8))
+            messages: [{ role: 'system', content: sysPrompt }].concat(history.slice(-6))
           })
         });
         var data = await res.json();
         if (!res.ok) throw new Error((data && data.error && data.error.message) || ('HTTP ' + res.status));
-        var reply = (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || '';
-        reply = reply.replace(/^```[a-z]*\r?\n?/i, '').replace(/\r?\n?```$/i, '').trim();
-        history.push({ role: 'assistant', content: reply });
+        var rawReply = (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || '';
+        history.push({ role: 'assistant', content: rawReply });
 
-        var applied = false;
-        if (directMode && reply) {
-          var applyRes = await applyTextToDocument(reply, kind);
-          applied = !!applyRes.ok;
+        thinking.div.remove();
+
+        if (!directMode) {
+          addMsg('bot', rawReply.trim() || 'No response received.', { actionObj: { action: 'insert', text: rawReply.trim() }, applied: false });
+          return;
         }
 
-        // Replace thinking bubble with final message + Apply/Copy controls
-        thinking.div.remove();
-        addMsg('bot', reply || 'No response received.', { canApply: true, applied: applied });
+        var actionObj = parseAiAction(rawReply, !!sel);
+        if (actionObj.action === 'reply') {
+          addMsg('bot', actionObj.text || rawReply.trim());
+        } else {
+          var applyRes = await executeEditAction(actionObj, kind);
+          var displayMsg = actionObj.action === 'replace'
+            ? (applyRes.summary || ('Replaced "' + actionObj.find + '" → "' + actionObj.replace + '"'))
+            : (actionObj.text || rawReply.trim());
+          addMsg('bot', displayMsg, { actionObj: actionObj, applied: !!applyRes.ok });
+        }
       } catch (err) {
         thinking.body.textContent = 'AI request failed: ' + (err && err.message ? err.message : String(err));
       } finally {
