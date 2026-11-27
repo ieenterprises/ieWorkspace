@@ -635,21 +635,24 @@
   }
 
   function detectEditorType() {
-    var w = getEditorFrameWin();
-    if (w) {
-      if (w.SSE) return 'cell';
-      if (w.PE) return 'slide';
-      if (w.PDFE) return 'pdf';
-      if (w.DE) return 'word';
-    }
     var href = (window.location.href || '').toLowerCase();
     var title = (document.title || '').toLowerCase();
     var icon = document.querySelector('link[rel="icon"]');
     var iconHref = icon ? (icon.getAttribute('href') || '').toLowerCase() : '';
     var combined = href + ' ' + title + ' ' + iconHref;
+
+    // Check PDF first because PDF forms run inside window.DE as well as window.PDFE
+    if (/(\.pdf\b|fileext=pdf|pdf\.ico)/.test(combined)) return 'pdf';
+
+    var w = getEditorFrameWin();
+    if (w) {
+      if (w.PDFE) return 'pdf';
+      if (w.SSE) return 'cell';
+      if (w.PE) return 'slide';
+      if (w.DE) return 'word';
+    }
     if (/(\.xlsx|\.xls|\.ods|\.csv|cell\.ico|spreadsheet|workbook)/.test(combined)) return 'cell';
     if (/(\.pptx|\.ppt|\.odp|slide\.ico|presentation)/.test(combined)) return 'slide';
-    if (/(\.pdf|pdf\.ico)/.test(combined)) return 'pdf';
     if (/(\.docx|\.doc|\.odt|\.rtf|word\.ico|document)/.test(combined)) return 'word';
     return 'general';
   }
