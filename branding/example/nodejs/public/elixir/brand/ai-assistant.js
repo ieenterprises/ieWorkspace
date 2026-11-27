@@ -10,6 +10,22 @@
   var ELIXIR_KEY = 'elixir-ai-settings';
   var PKCE_VERIFIER_KEY = 'ieworkspace-or-pkce-verifier';
   var POS_KEY = 'ieworkspace-ai-pos-v1';
+  var JOURNAL_KEY = 'ieworkspace-ai-journal-v1';
+  var lastModalIntent = 'settings'; // 'settings' or 'journal'
+
+  function loadJournal() {
+    try { return JSON.parse(localStorage.getItem(JOURNAL_KEY) || '[]'); } catch (e) { return []; }
+  }
+  function appendJournal(entry) {
+    try {
+      var list = loadJournal();
+      list.unshift(entry);
+      localStorage.setItem(JOURNAL_KEY, JSON.stringify(list.slice(0, 100)));
+    } catch (e) {}
+  }
+  function clearJournal() {
+    try { localStorage.removeItem(JOURNAL_KEY); } catch (e) {}
+  }
 
   var PROVIDERS = [
     {
@@ -224,14 +240,92 @@
     } catch (e) {}
   }
 
+  function buildJournalView(doc) {
+    var wrap = doc.createElement('div');
+    wrap.id = 'ie-modal-journal';
+    wrap.style.cssText = 'padding:4px 0 12px;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#1d1d1f;';
+    wrap.innerHTML =
+      '<h1 style="margin:0 0 8px;font-size:20px;font-weight:600;color:#1d1d1f;">AI journal</h1>' +
+      '<p style="margin:0 0 12px;font-size:13px;color:#555;">Stored locally in this browser. History of your ieWorkspace AI requests across Word, Excel, Presentation, and PDF.</p>' +
+      '<div style="display:flex;gap:8px;margin-bottom:12px;">' +
+        '<button type="button" id="ie-j-export" style="height:32px;padding:0 12px;border:1px solid #cbd5e1;border-radius:6px;background:#fff;font-size:12.5px;cursor:pointer;">Export JSON</button>' +
+        '<button type="button" id="ie-j-clear" style="height:32px;padding:0 12px;border:1px solid #cbd5e1;border-radius:6px;background:#fff;font-size:12.5px;cursor:pointer;">Clear journal</button>' +
+      '</div>' +
+      '<div style="max-height:320px;overflow:auto;border:1px solid #e5e7eb;border-radius:8px;">' +
+        '<table style="width:100%;border-collapse:collapse;font-size:12px;">' +
+          '<thead><tr style="background:#f8fafc;text-align:left;border-bottom:1px solid #e5e7eb;">' +
+            '<th style="padding:8px;">When</th><th style="padding:8px;">Editor</th><th style="padding:8px;">Model</th><th style="padding:8px;">Instruction</th><th style="padding:8px;">Result</th>' +
+          '</tr></thead>' +
+          '<tbody id="ie-j-body"></tbody>' +
+        '</table>' +
+      '</div>';
+
+    function render() {
+      var body = wrap.querySelector('#ie-j-body');
+      var list = loadJournal();
+      if (!list.length) {
+        body.innerHTML = '<tr><td colspan="5" style="padding:14px;text-align:center;color:#666;">No AI requests recorded yet.</td></tr>';
+        return;
+      }
+      body.innerHTML = '';
+      list.forEach(function (r) {
+        var tr = doc.createElement('tr');
+        tr.style.borderBottom = '1px solid #f1f5f9';
+        [r.when || '', r.editor || '', r.model || '', r.instruction || '', r.result || ''].forEach(function (val) {
+          var td = doc.createElement('td');
+          td.style.padding = '7px 8px';
+          td.textContent = String(val).slice(0, 120);
+          tr.appendChild(td);
+        });
+        body.appendChild(tr);
+      });
+    }
+
+    wrap.querySelector('#ie-j-export').addEventListener('click', function () {
+      var blob = new Blob([JSON.stringify(loadJournal(), null, 2)], { type: 'application/json' });
+      var a = doc.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'ieworkspace-ai-journal.json';
+      a.click();
+    });
+    wrap.querySelector('#ie-j-clear').addEventListener('click', function () {
+      clearJournal();
+      render();
+    });
+    render();
+    wrap._refresh = render;
+    return wrap;
+  }
+
+  function openStandaloneModal(doc, frameWin, mode) {
+    var existing = doc.getElementById('ie-standalone-modal-bg');
+    if (existing) existing.remove();
+    var bg = doc.createElement('div');
+    bg.id = 'ie-standalone-modal-bg';
+    bg.style.cssText = 'position:fixed;inset:0;z-index:2147483500;background:rgba(0,0,0,.38);display:flex;align-items:center;justify-content:center;padding:16px;';
+    var card = doc.createElement('div');
+    card.style.cssText = 'width:620px;max-width:95vw;max-height:88vh;overflow:auto;background:#fff;border-radius:12px;box-shadow:0 20px 50px rgba(0,0,0,.28);padding:20px 24px;display:flex;flex-direction:column;';
+    card.appendChild(mode === 'journal' ? buildJournalView(doc) : buildBackstageSettingsPanel(doc, frameWin, true));
+    var foot = doc.createElement('div');
+    foot.style.cssText = 'display:flex;justify-content:flex-end;margin-top:12px;';
+    var closeBtn = doc.createElement('button');
+    closeBtn.type = 'button';
+    closeBtn.textContent = 'Close';
+    closeBtn.style.cssText = 'height:34px;padding:0 16px;border:1px solid #cbd5e1;border-radius:6px;background:#fff;color:#1d1d1f;font-size:13px;cursor:pointer;';
+    closeBtn.addEventListener('click', function () { bg.remove(); });
+    foot.appendChild(closeBtn);
+    card.appendChild(foot);
+    bg.appendChild(card);
+    bg.addEventListener('click', function (e) { if (e.target === bg) bg.remove(); });
+    doc.body.appendChild(bg);
+  }
+
   function upgradeNativeAiSettingsModal(doc, frameWin) {
     try {
       var selects = doc.querySelectorAll('select');
       for (var i = 0; i < selects.length; i++) {
         var sel = selects[i];
         if (sel.id === 'ie-bs-provider' || sel.id === 'ie-bs-model') continue;
-        var modal = sel.closest('.elx-ai-modal, .elx-ai-settings, .modal-dialog, [role="dialog"], div');
-        // Walk up until we find the container holding "AI settings" and "Service URL"
         var cur = sel.parentElement;
         var host = null;
         for (var depth = 0; depth < 8 && cur && cur !== doc.body; depth++) {
@@ -245,23 +339,146 @@
         if (!host || host.getAttribute('data-ie-modal-upgraded') === '1') continue;
         host.setAttribute('data-ie-modal-upgraded', '1');
 
-        // Hide the legacy Provider/URL/Model/Key form nodes while preserving AI journal & Close button
         var children = Array.prototype.slice.call(host.children);
-        var insertBeforeNode = null;
+        var closeNode = null;
+        var inJournal = false;
         for (var c = 0; c < children.length; c++) {
           var ch = children[c];
           var ctxt = ch.textContent || '';
-          if (ctxt.indexOf('AI journal') !== -1 || /^\s*Close\s*$/i.test(ctxt)) {
-            if (!insertBeforeNode) insertBeforeNode = ch;
+          if (/^\s*Close\s*$/i.test(ctxt) || ch.querySelector && ch.querySelector('button') && /^\s*Close\s*$/i.test(ch.textContent)) {
+            closeNode = ch;
             continue;
           }
-          ch.style.display = 'none';
+          if (ctxt.indexOf('AI journal') !== -1) inJournal = true;
+          if (lastModalIntent === 'journal') {
+            // Show ONLY the native journal section, hide the settings section
+            if (!inJournal) ch.style.display = 'none';
+          } else {
+            // Show ONLY our upgraded settings panel, hide both old settings and journal clutter
+            ch.style.display = 'none';
+          }
         }
 
-        var panel = buildBackstageSettingsPanel(doc, frameWin, true);
-        if (insertBeforeNode) host.insertBefore(panel, insertBeforeNode);
-        else host.insertBefore(panel, host.firstChild);
+        if (lastModalIntent !== 'journal') {
+          var panel = buildBackstageSettingsPanel(doc, frameWin, true);
+          if (closeNode) host.insertBefore(panel, closeNode);
+          else host.insertBefore(panel, host.firstChild);
+        }
       }
+    } catch (e) {}
+  }
+
+  function attachRibbonTab(frameWin) {
+    try {
+      var doc = frameWin && frameWin.document;
+      if (!doc || !doc.body) return;
+
+      // 1. Hook native Word ribbon buttons: toggle Ask ieWorkspace AI bar on repeat click, and separate AI settings vs AI journal
+      if (!doc.body.getAttribute('data-ie-ribbon-clicks')) {
+        doc.body.setAttribute('data-ie-ribbon-clicks', '1');
+        doc.body.addEventListener('click', function (e) {
+          var btn = e.target && e.target.closest ? e.target.closest('button, .btn, [role="button"], li, a') : null;
+          if (!btn) return;
+          var label = (btn.textContent || btn.getAttribute('title') || btn.getAttribute('aria-label') || '').trim();
+          if (/^AI\s+journal$/i.test(label)) {
+            lastModalIntent = 'journal';
+          } else if (/^AI\s+settings$/i.test(label)) {
+            lastModalIntent = 'settings';
+          } else if (/^Ask\s+ieWorkspace\s+AI$/i.test(label) && !btn.getAttribute('data-ie-custom-tab-btn')) {
+            // Toggle native bottom Ask bar closed if it is already visible!
+            var bars = doc.querySelectorAll('.elx-ai-bar, [class*="elixir-ai"], [class*="elx-ai"]');
+            for (var i = 0; i < bars.length; i++) {
+              var b = bars[i];
+              if (b.querySelector && b.querySelector('input, textarea') && b.offsetParent !== null && !b.closest('[role="dialog"]')) {
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+                b.style.display = 'none';
+                var esc = new KeyboardEvent('keydown', { key: 'Escape', keyCode: 27, bubbles: true });
+                doc.dispatchEvent(esc);
+                return;
+              }
+            }
+          }
+        }, true);
+      }
+
+      // 2. If this editor (Excel, Presentation, PDF) has no "ieWorkspace AI" ribbon tab, inject one matching Word!
+      var tabsBar = doc.querySelector('#toolbar .ribtab ul, .toolbar .tabs, ul.ribtab, .ribtab');
+      if (!tabsBar || doc.getElementById('ie-ribbon-tab-ai')) return;
+
+      // Check if an AI tab already exists (e.g. Word)
+      var existingTabs = tabsBar.querySelectorAll('a, li, button');
+      for (var t = 0; t < existingTabs.length; t++) {
+        if (/^(Elixir|ieWorkspace AI)$/i.test((existingTabs[t].textContent || '').trim())) return;
+      }
+
+      var tabHost = tabsBar.tagName === 'UL' ? tabsBar : (tabsBar.querySelector('ul') || tabsBar);
+      var li = doc.createElement(tabHost.tagName === 'UL' ? 'li' : 'span');
+      li.id = 'ie-ribbon-tab-ai';
+      li.className = 'ie-ribbon-tab-item';
+      li.style.cssText = 'display:inline-flex;align-items:center;cursor:pointer;padding:0 11px;height:100%;font:500 13px/1 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#1d1d1f;border-bottom:2px solid transparent;user-select:none;';
+      li.textContent = 'ieWorkspace AI';
+      tabHost.appendChild(li);
+
+      // Ribbon panel container matching Word's Ask ieWorkspace AI / AI settings / AI journal strip
+      var toolbarEl = doc.querySelector('#toolbar, .toolbar, .box-tabs') || tabsBar.parentElement;
+      var strip = doc.createElement('div');
+      strip.id = 'ie-ribbon-ai-strip';
+      strip.style.cssText = 'display:none;position:absolute;left:0;right:0;top:100%;z-index:2000;height:82px;background:#f8fafc;border-bottom:1px solid #d1d5db;box-shadow:0 4px 12px rgba(0,0,0,.08);padding:6px 16px;align-items:center;gap:14px;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;';
+      strip.innerHTML =
+        '<button type="button" data-ie-custom-tab-btn="ask" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;height:66px;padding:6px 14px;border:1px solid transparent;border-radius:6px;background:transparent;cursor:pointer;color:#1d1d1f;font-size:12px;">' +
+          '<span style="font-size:20px;line-height:1;">&#10024;</span><span>Ask<br/>ieWorkspace AI</span>' +
+        '</button>' +
+        '<div style="width:1px;height:48px;background:#d1d5db;"></div>' +
+        '<button type="button" data-ie-custom-tab-btn="settings" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;height:66px;padding:6px 14px;border:1px solid transparent;border-radius:6px;background:transparent;cursor:pointer;color:#1d1d1f;font-size:12px;">' +
+          '<span style="font-size:19px;line-height:1;">&#9881;</span><span>AI<br/>settings</span>' +
+        '</button>' +
+        '<button type="button" data-ie-custom-tab-btn="journal" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;height:66px;padding:6px 14px;border:1px solid transparent;border-radius:6px;background:transparent;cursor:pointer;color:#1d1d1f;font-size:12px;">' +
+          '<span style="font-size:19px;line-height:1;">&#128337;</span><span>AI<br/>journal</span>' +
+        '</button>';
+
+      if (toolbarEl) {
+        if (getComputedStyle(toolbarEl).position === 'static') toolbarEl.style.position = 'relative';
+        toolbarEl.appendChild(strip);
+      }
+
+      function closeStrip() {
+        strip.style.display = 'none';
+        li.style.borderBottomColor = 'transparent';
+        li.style.color = '#1d1d1f';
+      }
+
+      li.addEventListener('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var opening = strip.style.display === 'none';
+        if (opening) {
+          strip.style.display = 'flex';
+          li.style.borderBottomColor = '#0082c9';
+          li.style.color = '#0082c9';
+        } else {
+          closeStrip();
+        }
+      });
+
+      tabsBar.addEventListener('click', function (e) {
+        if (!e.target.closest('#ie-ribbon-tab-ai')) closeStrip();
+      });
+
+      strip.addEventListener('click', function (e) {
+        var b = e.target && e.target.closest ? e.target.closest('button[data-ie-custom-tab-btn]') : null;
+        if (!b) return;
+        var act = b.getAttribute('data-ie-custom-tab-btn');
+        closeStrip();
+        if (act === 'ask') {
+          if (typeof window._ieToggleAIWin === 'function') window._ieToggleAIWin();
+        } else if (act === 'settings') {
+          openStandaloneModal(doc, frameWin, 'settings');
+        } else if (act === 'journal') {
+          openStandaloneModal(doc, frameWin, 'journal');
+        }
+      });
     } catch (e) {}
   }
 
@@ -272,6 +489,7 @@
     doc.body.setAttribute('data-ie-rebrand', '1');
     rebrandSubtree(doc.body);
     upgradeNativeAiSettingsModal(doc, frameWin);
+    attachRibbonTab(frameWin);
     var mo = new MutationObserver(function (muts) {
       var added = false;
       for (var i = 0; i < muts.length; i++) {
@@ -285,7 +503,10 @@
           for (var j = 0; j < m.addedNodes.length; j++) rebrandSubtree(m.addedNodes[j]);
         }
       }
-      if (added) upgradeNativeAiSettingsModal(doc, frameWin);
+      if (added) {
+        upgradeNativeAiSettingsModal(doc, frameWin);
+        attachRibbonTab(frameWin);
+      }
     });
     mo.observe(doc.body, {
       childList: true,
@@ -999,6 +1220,7 @@
         inputEl.focus();
       }
     }
+    window._ieToggleAIWin = toggleWin;
 
     makeDraggable(fab, fab, function (x, y) {
       try { localStorage.setItem(POS_KEY, JSON.stringify({ x: x, y: y })); } catch (e) {}
@@ -1130,15 +1352,18 @@
         thinking.div.remove();
 
         if (!directMode) {
+          appendJournal({ when: new Date().toLocaleString(), editor: preset.badge, model: cfg.model || p.models[0], instruction: instruction, result: 'chat' });
           addMsg('bot', rawReply.trim() || 'No response received.', { actionObj: { action: 'insert', text: rawReply.trim() }, applied: false });
           return;
         }
 
         var actionObj = parseAiAction(rawReply, !!sel);
         if (actionObj.action === 'reply') {
+          appendJournal({ when: new Date().toLocaleString(), editor: preset.badge, model: cfg.model || p.models[0], instruction: instruction, result: 'replied' });
           addMsg('bot', actionObj.text || rawReply.trim());
         } else {
           var applyRes = await executeEditAction(actionObj, kind);
+          appendJournal({ when: new Date().toLocaleString(), editor: preset.badge, model: cfg.model || p.models[0], instruction: instruction, result: applyRes.ok ? 'applied' : 'failed' });
           var displayMsg = actionObj.action === 'replace'
             ? (applyRes.summary || ('Replaced "' + actionObj.find + '" → "' + actionObj.replace + '"'))
             : (actionObj.text || rawReply.trim());
