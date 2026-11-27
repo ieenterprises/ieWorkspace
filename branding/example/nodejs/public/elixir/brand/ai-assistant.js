@@ -596,6 +596,178 @@
     } catch (e) {}
   }
 
+  /* ---- Context Menu "Ask ieWorkspace AI" + Quick Popover (Word, Excel, Presentation, PDF) + Click-outside-to-close ---- */
+  function closeQuickPopovers(doc) {
+    try {
+      var custom = doc && doc.getElementById('ie-ctx-ai-popover');
+      if (custom) custom.remove();
+      // Also close Word's native "Ask ieWorkspace AI about this..." popover if open
+      if (doc) {
+        var inputs = doc.querySelectorAll('input[placeholder*="about this"], input[placeholder*="Ask ieWorkspace AI"]');
+        for (var i = 0; i < inputs.length; i++) {
+          var pop = inputs[i].closest('.elx-ask-menu, .elx-ai-menu, [role="menu"], div');
+          var cur = inputs[i].parentElement;
+          for (var d = 0; d < 5 && cur && cur !== doc.body; d++) {
+            var st = getComputedStyle(cur);
+            if (st.position === 'fixed' || st.position === 'absolute') { pop = cur; break; }
+            cur = cur.parentElement;
+          }
+          if (pop && pop.id !== 'ie-ctx-ai-popover' && !pop.closest('#ie-ai-win')) {
+            pop.style.display = 'none';
+            try { doc.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', keyCode: 27, bubbles: true })); } catch (e) {}
+          }
+        }
+      }
+    } catch (e) {}
+  }
+
+  function openQuickAiPopover(doc, x, y) {
+    closeQuickPopovers(doc);
+    var kind = detectEditorType();
+    var itemsByKind = {
+      word: [
+        { label: 'Rewrite', prompt: 'Rewrite this highlighted text to be clearer and more professional.' },
+        { label: 'Shorten', prompt: 'Shorten this highlighted text while keeping the key points.' },
+        { label: 'Fix spelling and grammar', prompt: 'Fix spelling and grammar in this highlighted text without changing its meaning.' },
+        { label: 'Translate…', prefill: 'Translate to ' }
+      ],
+      cell: [
+        { label: 'Write formula', prefill: 'Write an Excel formula to ' },
+        { label: 'Explain formula', prompt: 'Explain what this selected Excel formula does.' },
+        { label: 'Clean & format cell', prompt: 'Clean and format the selected cell text.' },
+        { label: 'Translate…', prefill: 'Translate to ' }
+      ],
+      slide: [
+        { label: 'Rewrite slide text', prompt: 'Rewrite this highlighted slide text into crisp, punchy bullets.' },
+        { label: 'Shorten bullets', prompt: 'Shorten this slide text so it fits cleanly on one slide.' },
+        { label: 'Fix spelling and grammar', prompt: 'Fix spelling and grammar in this slide text.' },
+        { label: 'Translate…', prefill: 'Translate to ' }
+      ],
+      pdf: [
+        { label: 'Rewrite', prompt: 'Rewrite this highlighted PDF text clearly and concisely.' },
+        { label: 'Simplify text', prompt: 'Rewrite this highlighted PDF section in plain, simple English.' },
+        { label: 'Fix spelling and grammar', prompt: 'Fix spelling and grammar in this highlighted PDF text.' },
+        { label: 'Translate…', prefill: 'Translate to ' }
+      ]
+    };
+    var items = itemsByKind[kind] || itemsByKind.word;
+
+    var pop = doc.createElement('div');
+    pop.id = 'ie-ctx-ai-popover';
+    pop.style.cssText =
+      'position:fixed;z-index:2147483550;width:280px;background:#ffffff;border:1px solid rgba(0,0,0,.14);' +
+      'border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.18);padding:8px;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#1d1d1f;';
+
+    var maxL = Math.max(8, (doc.defaultView ? doc.defaultView.innerWidth : 900) - 296);
+    var maxT = Math.max(8, (doc.defaultView ? doc.defaultView.innerHeight : 600) - 230);
+    pop.style.left = Math.min(Math.max(8, x), maxL) + 'px';
+    pop.style.top = Math.min(Math.max(8, y), maxT) + 'px';
+
+    pop.innerHTML =
+      '<div style="display:flex;align-items:center;gap:7px;border:1px solid #cbd5e1;border-radius:7px;padding:6px 9px;margin-bottom:6px;background:#fff;">' +
+        '<span style="color:#6d4aff;font-size:15px;line-height:1;">&#10024;</span>' +
+        '<input id="ie-ctx-ai-input" type="text" placeholder="Ask ieWorkspace AI about this…" style="border:none;outline:none;flex:1;font:13px/1.3 system-ui,sans-serif;color:#1d1d1f;background:transparent;" />' +
+      '</div>' +
+      '<div id="ie-ctx-ai-list" style="display:flex;flex-direction:column;"></div>';
+
+    var list = pop.querySelector('#ie-ctx-ai-list');
+    var input = pop.querySelector('#ie-ctx-ai-input');
+
+    function runInstruction(txt) {
+      var val = String(txt || '').trim();
+      if (!val) return;
+      pop.remove();
+      if (typeof window._ieRunAIInstruction === 'function') {
+        window._ieRunAIInstruction(val);
+      }
+    }
+
+    items.forEach(function (it) {
+      var btn = doc.createElement('button');
+      btn.type = 'button';
+      btn.textContent = it.label;
+      btn.style.cssText = 'text-align:left;padding:8px 10px;border:none;border-radius:6px;background:transparent;color:#1d1d1f;font:400 13px/1.25 system-ui,sans-serif;cursor:pointer;';
+      btn.addEventListener('mouseenter', function () { btn.style.background = '#f1f3f5'; });
+      btn.addEventListener('mouseleave', function () { btn.style.background = 'transparent'; });
+      btn.addEventListener('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (it.prefill) {
+          input.value = it.prefill;
+          input.focus();
+        } else {
+          runInstruction(it.prompt);
+        }
+      });
+      list.appendChild(btn);
+    });
+
+    input.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        runInstruction(input.value);
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        pop.remove();
+      }
+    });
+
+    doc.body.appendChild(pop);
+    setTimeout(function () { input.focus(); }, 20);
+  }
+
+  function enhanceContextMenus(doc) {
+    try {
+      var menus = doc.querySelectorAll('ul.dropdown-menu, ul[role="menu"]');
+      for (var i = 0; i < menus.length; i++) {
+        var menu = menus[i];
+        if (menu.offsetParent === null) continue;
+        if (menu.getAttribute('data-ie-ctx-ai') === '1') continue;
+        var text = menu.textContent || '';
+        // Only target editor canvas context menus containing Cut/Copy/Paste, and skip if Ask ieWorkspace AI is already present
+        if (!(/\bPaste\b/i.test(text) && (/\bCopy\b/i.test(text) || /\bCut\b/i.test(text)))) continue;
+        if (/Ask\s+(ieWorkspace\s+AI|Elixir)/i.test(text)) {
+          menu.setAttribute('data-ie-ctx-ai', '1');
+          continue;
+        }
+        menu.setAttribute('data-ie-ctx-ai', '1');
+
+        // Find the Paste item to insert directly after it (matching Word's exact placement)
+        var pasteLi = null;
+        var lis = menu.children;
+        for (var j = 0; j < lis.length; j++) {
+          if (/\bPaste\b/i.test(lis[j].textContent || '')) { pasteLi = lis[j]; break; }
+        }
+
+        var li = doc.createElement('li');
+        li.className = 'ie-ctx-ai-item';
+        li.setAttribute('role', 'menuitem');
+        li.innerHTML =
+          '<a href="#" style="display:flex;align-items:center;gap:8px;padding:6px 14px;text-decoration:none;color:#1d1d1f;font:400 13px/1.3 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;">' +
+            '<span style="color:#6d4aff;font-size:15px;line-height:1;">&#10024;</span><span>Ask ieWorkspace AI</span>' +
+          '</a>';
+
+        li.addEventListener('mousedown', function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+        });
+        li.addEventListener('click', function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          var rect = menu.getBoundingClientRect();
+          menu.style.display = 'none';
+          openQuickAiPopover(doc, rect.left, rect.top);
+        });
+
+        if (pasteLi && pasteLi.parentNode === menu) {
+          pasteLi.insertAdjacentElement('afterend', li);
+        } else {
+          menu.insertBefore(li, menu.firstChild);
+        }
+      }
+    } catch (e) {}
+  }
+
   function attachRebrandObserver(frameWin) {
     if (!frameWin || !frameWin.document || !frameWin.document.body) return;
     var doc = frameWin.document;
@@ -604,14 +776,31 @@
     rebrandSubtree(doc.body);
     upgradeNativeAiSettingsModal(doc, frameWin);
     attachRibbonTab(frameWin);
+    enhanceContextMenus(doc);
+
+    // Click/tap anywhere on empty space outside quick AI popovers closes them immediately
+    doc.addEventListener('pointerdown', function (e) {
+      var target = e.target;
+      if (target && target.closest && (target.closest('#ie-ctx-ai-popover') || target.closest('.ie-ctx-ai-item') || target.closest('.elx-ask-menu'))) return;
+      var inNativePop = false;
+      var cur = target;
+      for (var d = 0; d < 6 && cur && cur !== doc.body; d++) {
+        if (cur.querySelector && cur.querySelector('input[placeholder*="about this"]')) { inNativePop = true; break; }
+        cur = cur.parentElement;
+      }
+      if (!inNativePop) closeQuickPopovers(doc);
+    }, true);
+
     var mo = new MutationObserver(function (muts) {
       var added = false;
+      var styleChanged = false;
       for (var i = 0; i < muts.length; i++) {
         var m = muts[i];
         if (m.type === 'characterData') {
           rebrandSubtree(m.target);
         } else if (m.type === 'attributes') {
-          rebrandSubtree(m.target);
+          if (m.attributeName === 'style' || m.attributeName === 'class') styleChanged = true;
+          else rebrandSubtree(m.target);
         } else if (m.addedNodes && m.addedNodes.length) {
           added = true;
           for (var j = 0; j < m.addedNodes.length; j++) rebrandSubtree(m.addedNodes[j]);
@@ -621,13 +810,14 @@
         upgradeNativeAiSettingsModal(doc, frameWin);
         attachRibbonTab(frameWin);
       }
+      if (added || styleChanged) enhanceContextMenus(doc);
     });
     mo.observe(doc.body, {
       childList: true,
       subtree: true,
       characterData: true,
       attributes: true,
-      attributeFilter: ['placeholder', 'title', 'aria-label']
+      attributeFilter: ['placeholder', 'title', 'aria-label', 'style', 'class']
     });
   }
 
@@ -1495,6 +1685,14 @@
     }
 
     sendBtn.addEventListener('click', send);
+    window._ieRunAIInstruction = function (text) {
+      if (!win.classList.contains('open')) {
+        win.classList.add('open');
+        refreshSelectionBadge();
+      }
+      inputEl.value = String(text || '');
+      send();
+    };
     inputEl.addEventListener('keydown', function (e) {
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
