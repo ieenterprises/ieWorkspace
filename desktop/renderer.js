@@ -521,7 +521,7 @@ async function showOptions(){
  for(const seconds of [15,30,60,120,300]){const option=document.createElement('option');option.value=seconds;option.textContent=String(seconds)+' s';option.selected=seconds===options.seconds;interval.append(option)}recoveryRow.append(interval);
  const authorLabel=document.createElement('label'),author=document.createElement('input');author.type='text';author.id='author-name';author.maxLength=200;author.value=await eoDesktop.author();authorLabel.textContent=t('authorName');authorLabel.append(author);authorGroup.append(authorLabel);
  const aiController=(frame?.DE||frame?.SSE||frame?.PE||frame?.PDFE)?.getController('Common.Controllers.ElixirAI');
- if(aiController){const aiButton=modalButton(authorGroup,'Elixir — '+t('settings'),()=>{box.close();aiController.openSettings(false)});aiButton.className='btn desktop-ai-settings';}
+ if(aiController){const aiButton=modalButton(authorGroup,'ieWorkspace AI — '+t('settings'),()=>{box.close();aiController.openSettings(false)});aiButton.className='btn desktop-ai-settings';}
  const note=document.createElement('p');note.className='desktop-privacy';note.textContent=t('privacy');box.append(note);
  const windowHeading=document.createElement('h3');windowHeading.textContent=t('window');windowGroup.append(windowHeading);
  const tabsLabel=document.createElement('label'),tabs=document.createElement('input'),homeLabel=document.createElement('label'),home=document.createElement('input'),homeNote=document.createElement('p');

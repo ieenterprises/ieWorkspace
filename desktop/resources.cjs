@@ -6,12 +6,12 @@ const SCHEME='eoapp',HOST='desktop.elixiroffice.invalid',ORIGIN=SCHEME+'://'+HOS
 const MIME={'.html':'text/html','.htm':'text/html','.js':'application/javascript','.css':'text/css','.json':'application/json','.wasm':'application/wasm','.svg':'image/svg+xml','.png':'image/png','.jpg':'image/jpeg','.gif':'image/gif','.bmp':'image/bmp','.webp':'image/webp','.mp4':'video/mp4','.webm':'video/webm','.mp3':'audio/mpeg','.ogg':'audio/ogg','.wav':'audio/wav','.woff':'font/woff','.woff2':'font/woff2','.ttf':'font/ttf','.otf':'font/otf'};
 function policy(editor){
  const scripts=editor?"'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval'":"'self'";
- return ["default-src 'none'",'script-src '+scripts,"style-src 'self' 'unsafe-inline'","img-src 'self' blob: data:","font-src 'self' blob: data:","connect-src 'self' blob: data:","worker-src 'self' blob:","frame-src 'self'","media-src 'self' blob: data:","object-src 'none'","base-uri 'none'","form-action 'none'"].join('; ');
+ return ["default-src 'none'",'script-src '+scripts,"style-src 'self' 'unsafe-inline'","img-src 'self' blob: data:","font-src 'self' blob: data:","connect-src 'self' blob: data: https: http://localhost:* http://127.0.0.1:*","worker-src 'self' blob:","frame-src 'self'","media-src 'self' blob: data:","object-src 'none'","base-uri 'none'","form-action 'none'"].join('; ');
 }
 function resolve(url,assets,shell){
  let relative;try{relative=decodeURIComponent(url.pathname)}catch{return {status:400}}
  let root;
- if(['/tabs.html','/tabs.js','/tabs.css','/index.html','/renderer.js','/release-banner.js','/compact-editor.js','/style.css','/pdf.js','/home.js','/backstage.js','/ai.js','/errors.js','/pdf-compat.js','/feedback.js','/feedback.css','/font-resolver.js','/computer-fonts.js'].includes(relative)){root=shell;relative=relative.slice(1)}
+ if(['/tabs.html','/tabs.js','/tabs.css','/index.html','/renderer.js','/release-banner.js','/compact-editor.js','/style.css','/pdf.js','/home.js','/backstage.js','/ai.js','/ai-assistant.js','/icon.png','/errors.js','/pdf-compat.js','/feedback.js','/feedback.css','/font-resolver.js','/computer-fonts.js'].includes(relative)){root=shell;relative=relative.slice(1)}
  else if(/^\/example\/local-assets\/sdkjs\/common\/desktop\/(pdf|legacy-worker)\.js$/.test(relative)){root=shell;relative=path.basename(relative)}
  else if(relative.startsWith('/example/local-assets/')){
   root=assets;relative=relative.slice('/example/local-assets/'.length).replace(/^\d+\.\d+\.\d+-[a-f0-9]+\//,'');

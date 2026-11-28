@@ -80,5 +80,28 @@ const brandFav = path.join(root, 'branding', 'example', 'nodejs', 'public', 'eli
 const desktopBrandDir = path.join(assetsDir, 'example', 'local-assets', 'desktop-home', 'brand');
 copyIfDir(brandLogo, path.join(desktopBrandDir, 'logo.svg'));
 copyIfDir(brandFav, path.join(desktopBrandDir, 'favicon.svg'));
+copyIfDir(brandLogo, path.join(assetsDir, 'desktop-home', 'brand', 'logo.svg'));
+copyIfDir(brandFav, path.join(assetsDir, 'desktop-home', 'brand', 'favicon.svg'));
+
+// 4. Sync desktop-manifest.json byte sizes after overlaying brand assets so eoapp:// never mismatches Content-Length
+const manifestPath = path.join(assetsDir, 'desktop-manifest.json');
+if (fs.existsSync(manifestPath)) {
+  const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+  if (manifest && manifest.files && typeof manifest.files === 'object') {
+    let updated = 0;
+    for (const [rel, rec] of Object.entries(manifest.files)) {
+      const full = path.join(assetsDir, rel);
+      if (fs.existsSync(full)) {
+        const sz = fs.statSync(full).size;
+        if (rec && rec.bytes !== sz) {
+          rec.bytes = sz;
+          updated++;
+        }
+      }
+    }
+    fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + '\n');
+    console.log('Updated desktop-manifest.json sizes for', updated, 'rebranded asset(s).');
+  }
+}
 
 console.log('Prepared ieWorkspace desktop assets and build-info.json:', identity.version, 'build', identity.build_number);

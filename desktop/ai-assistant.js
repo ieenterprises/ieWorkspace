@@ -1337,16 +1337,27 @@
   }
 
   function startBackstageWatcher() {
-    var attempts = 0;
-    var timer = setInterval(function () {
-      attempts++;
+    // Run continuously so Desktop (Windows/macOS/Linux) re-attaches whenever a new document iframe is opened or switched!
+    setInterval(function () {
       var frames = document.querySelectorAll('iframe');
       for (var i = 0; i < frames.length; i++) {
         try {
-          if (attachToBackstage(frames[i].contentWindow)) { clearInterval(timer); return; }
+          var fw = frames[i].contentWindow;
+          if (!fw || !fw.document || !fw.document.body) continue;
+          attachRebrandObserver(fw);
+          attachToBackstage(fw);
+          attachRibbonTab(fw);
         } catch (e) {}
       }
-      if (attempts > 60) clearInterval(timer);
+      // On Desktop shell (#workspace exists), show the round AI bubble only while a document is open
+      var ws = document.getElementById('workspace');
+      var fabEl = document.getElementById('ie-ai-fab');
+      var winEl = document.getElementById('ie-ai-win');
+      if (ws && fabEl) {
+        var visible = !ws.hidden;
+        fabEl.style.display = visible ? 'inline-flex' : 'none';
+        if (!visible && winEl) winEl.classList.remove('open');
+      }
     }, 500);
   }
 
