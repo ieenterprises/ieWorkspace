@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Starting ieWorkspace…</title>
-  <link rel="icon" href="/example/elixir/brand/favicon.svg" type="image/svg+xml" />
+  <link rel="icon" href="/elixir/brand/favicon.svg" type="image/svg+xml" />
   <style>
     * { box-sizing: border-box; }
     body {
@@ -60,7 +60,7 @@
 </head>
 <body>
   <div class="card">
-    <img class="logo" src="/example/elixir/brand/icon-192.png" alt="ieWorkspace" />
+    <img class="logo" src="/elixir/brand/icon-192.png" alt="ieWorkspace" />
     <h1>Starting ieWorkspace…</h1>
     <p>Preparing your workspace. You will be taken straight into the application automatically in a few seconds.</p>
     <div class="spinner" aria-hidden="true"></div>
@@ -71,7 +71,7 @@
         .then(function (r) { return r.ok ? r.text() : ''; })
         .then(function (t) {
           if (t && t.trim() === 'true') {
-            window.location.replace('/example/');
+            window.location.replace('/');
           } else {
             setTimeout(check, 2500);
           }

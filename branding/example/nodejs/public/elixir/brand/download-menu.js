@@ -302,6 +302,59 @@
     }
 
     setupRecentMultiSelect();
+
+    // Sync signed-in ieWorkspace user, suppress anonymous "What's your name?" prompt, and add Sign out
+    (function setupWebAuthProfile() {
+      function dismissNameDialog() {
+        var dlgs = document.querySelectorAll('dialog[open]');
+        for (var i = 0; i < dlgs.length; i++) {
+          var txt = dlgs[i].textContent || '';
+          if (/What.{1,3}s your name/i.test(txt)) {
+            try { dlgs[i].close(); } catch (e) { dlgs[i].removeAttribute('open'); }
+          }
+        }
+      }
+      dismissNameDialog();
+      var mo = new MutationObserver(dismissNameDialog);
+      mo.observe(document.body, { attributes: true, subtree: true, attributeFilter: ['open'] });
+
+      fetch('/api/auth/me', { credentials: 'same-origin' })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (data) {
+          if (!data || !data.authenticated || !data.user) return;
+          var u = data.user;
+          try { localStorage.setItem('ieworkspace-user', JSON.stringify(u)); } catch (e) {}
+          var initials = (u.name || u.email || 'U').trim().split(/\s+/).map(function (p) { return p[0]; }).join('').slice(0, 2).toUpperCase();
+          var btn = document.getElementById('account-btn');
+          if (btn) {
+            btn.title = u.name + ' (' + u.email + ')';
+            btn.setAttribute('aria-label', 'Account: ' + u.name);
+            var av = btn.querySelector('.avatar');
+            if (av) av.textContent = initials;
+          }
+          // Add user info + Sign out button into the Account panel
+          var panel = document.getElementById('account-panel');
+          if (panel && !document.getElementById('ie-web-signout')) {
+            var box = document.createElement('div');
+            box.id = 'ie-web-signout';
+            box.style.cssText = 'margin-top:10px;padding-top:10px;border-top:1px solid #e5e7eb;display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12.5px;';
+            box.innerHTML =
+              '<div style="min-width:0;overflow:hidden;"><div style="font-weight:600;color:#1d1d1f;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div><div style="color:#64748b;font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div></div>' +
+              '<button type="button" style="flex-shrink:0;height:30px;padding:0 12px;border:1px solid #fca5a5;border-radius:6px;background:#fff;color:#b91c1c;font-weight:600;font-size:12px;cursor:pointer;">Sign out</button>';
+            box.children[0].children[0].textContent = u.name;
+            box.children[0].children[1].textContent = u.email;
+            box.querySelector('button').addEventListener('click', function () {
+              fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' })
+                .finally(function () {
+                  try { localStorage.removeItem('ieworkspace-user'); } catch (e) {}
+                  window.location.replace('/login');
+                });
+            });
+            panel.appendChild(box);
+          }
+        })
+        .catch(function () {});
+    })();
   }
 
   if (document.readyState === 'loading') {

@@ -1410,7 +1410,7 @@
     injectStyles();
     startBackstageWatcher();
 
-    var logoSrc = document.getElementById('workspace') ? '/icon.png' : 'elixir/brand/icon-192.png';
+    var logoSrc = document.getElementById('workspace') ? '/icon.png' : '/elixir/brand/icon-192.png';
     var kind = detectEditorType();
     var preset = PROMPTS[kind] || PROMPTS.general;
     var history = [];

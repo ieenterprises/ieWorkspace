@@ -65,25 +65,32 @@ RUN set -e; \
     done; \
     chmod -R a+rX /var/www/elixiroffice/ieworkspace-brand
 
-# 4. Start page config (appName: ieWorkspace) and nginx branding overlay
+# 4. Start page config (appName: ieWorkspace), Auth service, and nginx routing overlay
 ENV EXAMPLE_ENABLED=true \
     GENERATE_FONTS=false
+
+RUN mkdir -p /var/www/elixiroffice/ieworkspace-auth
+COPY deploy/auth/server.py /var/www/elixiroffice/ieworkspace-auth/server.py
+COPY deploy/auth/login.html /var/www/elixiroffice/ieworkspace-auth/login.html
+COPY deploy/auth/ds-auth.conf /etc/supervisor/conf.d/ds-auth.conf
 
 COPY deploy/server/example.json /etc/elixiroffice/documentserver-example/local-production-linux.json
 COPY deploy/render/ds-example.conf /etc/nginx/includes/ds-example.conf
 COPY deploy/render/starting.html /var/www/elixiroffice/ieworkspace-brand/starting.html
 COPY deploy/render/starting.html /var/www/elixiroffice/documentserver-example/welcome/example-disabled.html
 
-# 5. Force example service to autostart on port 3000 (prevents PaaS PORT=80/10000 from breaking upstream localhost:3000),
-#    and redirect root "/" directly to ieWorkspace Home (/example/) instead of /welcome/
+# 5. Force example service to autostart on port 3000 (prevents PaaS PORT=80/10000 collision),
+#    enable ie-auth service, and remove legacy root "/" redirect from ds-docservice.conf so ds-example.conf owns "/"
 RUN set -e; \
     chmod 644 /etc/elixiroffice/documentserver-example/local-production-linux.json; \
+    chmod 755 /var/www/elixiroffice/ieworkspace-auth/server.py; \
+    chmod 644 /var/www/elixiroffice/ieworkspace-auth/login.html /etc/supervisor/conf.d/ds-auth.conf; \
     if [ -f /etc/supervisor/conf.d/ds-example.conf ]; then \
       sed -i 's/^autostart=false$/autostart=true/' /etc/supervisor/conf.d/ds-example.conf; \
       sed -i 's/^environment=/environment=PORT=3000,/' /etc/supervisor/conf.d/ds-example.conf; \
     fi; \
     for f in /etc/elixiroffice/documentserver/nginx/includes/ds-docservice.conf /etc/nginx/includes/ds-docservice.conf; do \
-      [ -f "$f" ] && sed -i 's|/welcome/|/example/|g' "$f"; \
+      [ -f "$f" ] && sed -i 's|^location = / {|# removed by ieWorkspace: location = / {|g' "$f"; \
     done; \
     for f in /var/www/elixiroffice/documentserver-example/welcome/docker.html /var/www/elixiroffice/documentserver-example/welcome/example-disabled.html; do \
       [ -f "$f" ] && sed -i 's/ElixirOffice/ieWorkspace/g' "$f"; \

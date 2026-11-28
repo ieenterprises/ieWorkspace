@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sign in — ieWorkspace</title>
+  <link rel="icon" href="/elixir/brand/favicon.svg" type="image/svg+xml" />
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(145deg, #f3f7fb 0%, #e7f0f8 100%);
+      color: #1d1d1f;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      padding: 20px;
+    }
+    .card {
+      width: 100%;
+      max-width: 410px;
+      background: #ffffff;
+      border-radius: 16px;
+      box-shadow: 0 14px 40px rgba(15, 23, 42, 0.10);
+      padding: 34px 32px 30px;
+      border: 1px solid rgba(0, 0, 0, 0.06);
+    }
+    .brand {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      margin-bottom: 22px;
+    }
+    .brand img {
+      width: 68px;
+      height: 68px;
+      border-radius: 50%;
+      object-fit: contain;
+      border: 2px solid #e5e7eb;
+      background: #fff;
+      margin-bottom: 10px;
+    }
+    .brand h1 {
+      margin: 0;
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+    .brand p {
+      margin: 5px 0 0;
+      font-size: 13.5px;
+      color: #5b626b;
+    }
+    .tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      background: #f1f5f9;
+      border-radius: 9px;
+      padding: 4px;
+      margin-bottom: 20px;
+    }
+    .tab {
+      border: none;
+      background: transparent;
+      padding: 8px 0;
+      border-radius: 7px;
+      font: 600 13.5px/1 system-ui, sans-serif;
+      color: #475569;
+      cursor: pointer;
+      transition: background .15s, color .15s, box-shadow .15s;
+    }
+    .tab.active {
+      background: #ffffff;
+      color: #0082c9;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.07);
+    }
+    .field {
+      margin-bottom: 14px;
+    }
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: #334155;
+      margin-bottom: 5px;
+    }
+    input {
+      width: 100%;
+      height: 40px;
+      padding: 0 12px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      font-size: 14px;
+      color: #111827;
+      outline: none;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    input:focus {
+      border-color: #0082c9;
+      box-shadow: 0 0 0 3px rgba(0, 130, 201, 0.16);
+    }
+    .err {
+      display: none;
+      margin-bottom: 14px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      color: #b91c1c;
+      font-size: 13px;
+    }
+    .err.show { display: block; }
+    .submit {
+      width: 100%;
+      height: 42px;
+      border: none;
+      border-radius: 8px;
+      background: #0082c9;
+      color: #ffffff;
+      font: 600 14.5px/1 system-ui, sans-serif;
+      cursor: pointer;
+      transition: background .15s;
+      margin-top: 4px;
+    }
+    .submit:hover { background: #006da8; }
+    .submit:disabled { opacity: 0.6; cursor: not-allowed; }
+    .note {
+      margin-top: 16px;
+      text-align: center;
+      font-size: 12px;
+      color: #64748b;
+      line-height: 1.45;
+    }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <div class="brand">
+      <img src="/elixir/brand/icon-192.png" alt="ieWorkspace" />
+      <h1>ieWorkspace</h1>
+      <p id="subtitle">Sign in to access your documents &amp; desktop apps</p>
+    </div>
+
+    <div class="tabs" role="tablist">
+      <button type="button" class="tab active" id="tab-login" role="tab" aria-selected="true">Sign in</button>
+      <button type="button" class="tab" id="tab-signup" role="tab" aria-selected="false">Create account</button>
+    </div>
+
+    <div class="err" id="err-box" role="alert"></div>
+
+    <form id="auth-form">
+      <div class="field" id="name-wrap" style="display:none;">
+        <label for="name">Full name</label>
+        <input id="name" name="name" type="text" autocomplete="name" placeholder="Jane Doe" />
+      </div>
+      <div class="field">
+        <label for="email">Email address</label>
+        <input id="email" name="email" type="email" required autocomplete="email" placeholder="you@company.com" />
+      </div>
+      <div class="field">
+        <label for="password">Password</label>
+        <input id="password" name="password" type="password" required autocomplete="current-password" placeholder="At least 6 characters" />
+      </div>
+      <button type="submit" class="submit" id="submit-btn">Sign in</button>
+    </form>
+
+    <p class="note">Use these same credentials to sign in on ieWorkspace Web, Windows, macOS, Linux, and Android.</p>
+  </main>
+
+  <script>
+    (function () {
+      var mode = (window.location.hash === '#signup' || window.location.pathname === '/signup') ? 'signup' : 'login';
+      var tabLogin = document.getElementById('tab-login');
+      var tabSignup = document.getElementById('tab-signup');
+      var nameWrap = document.getElementById('name-wrap');
+      var nameIn = document.getElementById('name');
+      var emailIn = document.getElementById('email');
+      var passIn = document.getElementById('password');
+      var submitBtn = document.getElementById('submit-btn');
+      var errBox = document.getElementById('err-box');
+      var subtitle = document.getElementById('subtitle');
+
+      function setMode(next) {
+        mode = next;
+        var isSignup = mode === 'signup';
+        tabLogin.classList.toggle('active', !isSignup);
+        tabSignup.classList.toggle('active', isSignup);
+        tabLogin.setAttribute('aria-selected', String(!isSignup));
+        tabSignup.setAttribute('aria-selected', String(isSignup));
+        nameWrap.style.display = isSignup ? 'block' : 'none';
+        nameIn.required = isSignup;
+        passIn.autocomplete = isSignup ? 'new-password' : 'current-password';
+        submitBtn.textContent = isSignup ? 'Create account' : 'Sign in';
+        subtitle.textContent = isSignup
+          ? 'Create your ieWorkspace account to get started'
+          : 'Sign in to access your documents & desktop apps';
+        errBox.classList.remove('show');
+      }
+
+      tabLogin.addEventListener('click', function () { setMode('login'); });
+      tabSignup.addEventListener('click', function () { setMode('signup'); });
+      setMode(mode);
+
+      document.getElementById('auth-form').addEventListener('submit', async function (e) {
+        e.preventDefault();
+        errBox.classList.remove('show');
+        submitBtn.disabled = true;
+        try {
+          var endpoint = mode === 'signup' ? '/api/auth/signup' : '/api/auth/login';
+          var payload = { email: emailIn.value.trim(), password: passIn.value };
+          if (mode === 'signup') payload.name = nameIn.value.trim();
+
+          var res = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify(payload)
+          });
+          var data = await res.json();
+          if (!res.ok) throw new Error(data.error || 'Authentication failed');
+          if (data.user && data.user.name) {
+            try { localStorage.setItem('ieworkspace-user', JSON.stringify(data.user)); } catch (err) {}
+          }
+          var params = new URLSearchParams(window.location.search);
+          var next = params.get('next') || '/';
+          if (next.indexOf('//') === 0 || next.indexOf('http') === 0) next = '/';
+          window.location.replace(next);
+        } catch (err) {
+          errBox.textContent = err && err.message ? err.message : 'Something went wrong.';
+          errBox.classList.add('show');
+          submitBtn.disabled = false;
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

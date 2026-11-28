@@ -22,7 +22,7 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 
 public class MainActivity extends AppCompatActivity {
-    private static final String START_URL = "https://ieworkspace.apps.iecloudbase.com/example/";
+    private static final String START_URL = "https://ieworkspace.apps.iecloudbase.com/";
     private WebView webView;
     private ValueCallback<Uri[]> filePathCallback;
 
