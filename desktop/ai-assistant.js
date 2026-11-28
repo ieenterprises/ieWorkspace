@@ -159,16 +159,8 @@
   function saveConfig(cfg) {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(cfg));
-      if (cfg && (cfg.apiKey || cfg.provider === 'ollama')) {
-        localStorage.setItem(ELIXIR_KEY, JSON.stringify({
-          endpoint: cfg.baseUrl,
-          model: cfg.model,
-          apiKey: cfg.apiKey || 'ollama',
-          provider: 'openai'
-        }));
-      } else {
-        localStorage.removeItem(ELIXIR_KEY);
-      }
+      // Keep legacy Word-only ElixirAI disabled so Word, Excel, Presentation, and PDF stay 100% uniform
+      localStorage.removeItem(ELIXIR_KEY);
     } catch (e) {}
   }
 
@@ -176,6 +168,19 @@
     try {
       localStorage.removeItem(STORAGE_KEY);
       localStorage.removeItem(ELIXIR_KEY);
+    } catch (e) {}
+  }
+
+  function disableLegacyWordAI(frameWin) {
+    try { localStorage.removeItem(ELIXIR_KEY); } catch (e) {}
+    try {
+      if (frameWin && frameWin.localStorage) frameWin.localStorage.removeItem(ELIXIR_KEY);
+      if (frameWin && frameWin.Common && frameWin.Common.NotificationCenter) {
+        frameWin.Common.NotificationCenter.trigger('elixir:ai-state', false);
+      }
+      var app = frameWin && (frameWin.DE || frameWin.SSE || frameWin.PE);
+      var ctrl = app && app.getController && app.getController('Common.Controllers.ElixirAI');
+      if (ctrl && ctrl.refreshState) ctrl.refreshState();
     } catch (e) {}
   }
 
@@ -716,54 +721,15 @@
     setTimeout(function () { input.focus(); }, 20);
   }
 
-  function enhanceContextMenus(doc) {
+  function hideLegacyWordContextEntries(doc) {
     try {
-      var menus = doc.querySelectorAll('ul.dropdown-menu, ul[role="menu"]');
-      for (var i = 0; i < menus.length; i++) {
-        var menu = menus[i];
-        if (menu.offsetParent === null) continue;
-        // Check for our actual item (NOT a data attribute, because ONLYOFFICE reuses the <ul> and replaces innerHTML!)
-        if (menu.querySelector('.ie-ctx-ai-item')) continue;
-        // Skip ribbon toolbar dropdowns
-        if (menu.closest('#toolbar, .toolbar')) continue;
-        var text = menu.textContent || '';
-        if (!(/\b(Paste|Copy|Cut)\b/i.test(text))) continue;
-        if (/Ask\s+(ieWorkspace\s+AI|Elixir)/i.test(text)) continue;
-
-        // Find the Paste item (or Copy/Cut fallback) to insert directly after it
-        var anchorLi = null;
-        var lis = menu.children;
-        for (var j = 0; j < lis.length; j++) {
-          var lt = lis[j].textContent || '';
-          if (/\bPaste\b/i.test(lt)) { anchorLi = lis[j]; break; }
-          if (!anchorLi && /\b(Copy|Cut)\b/i.test(lt)) anchorLi = lis[j];
-        }
-
-        var li = doc.createElement('li');
-        li.className = 'ie-ctx-ai-item';
-        li.setAttribute('role', 'menuitem');
-        li.innerHTML =
-          '<a href="#" style="display:flex;align-items:center;gap:8px;padding:6px 14px;text-decoration:none;color:#1d1d1f;font:400 13px/1.3 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;">' +
-            '<span style="color:#6d4aff;font-size:15px;line-height:1;">&#10024;</span><span>Ask ieWorkspace AI</span>' +
-          '</a>';
-
-        li.addEventListener('mousedown', function (e) {
-          e.preventDefault();
-          e.stopPropagation();
-        });
-        li.addEventListener('click', function (e) {
-          e.preventDefault();
-          e.stopPropagation();
-          var rect = menu.getBoundingClientRect();
-          menu.style.display = 'none';
-          try { doc.defaultView && doc.defaultView.Common && doc.defaultView.Common.UI && doc.defaultView.Common.UI.Menu && doc.defaultView.Common.UI.Menu.Manager && doc.defaultView.Common.UI.Menu.Manager.hideAll(); } catch (err) {}
-          openQuickAiPopover(doc, rect.left, rect.top);
-        });
-
-        if (anchorLi && anchorLi.parentNode === menu) {
-          anchorLi.insertAdjacentElement('afterend', li);
-        } else {
-          menu.insertBefore(li, menu.firstChild);
+      // Hide any legacy Word-only right-click "Ask ieWorkspace AI" / "Ask Elixir" item and mini-toolbar sparkle for 100% uniformity
+      var items = doc.querySelectorAll('ul.dropdown-menu li, ul[role="menu"] li, #mini-toolbar button, #mini-toolbar .btn');
+      for (var i = 0; i < items.length; i++) {
+        var el = items[i];
+        var t = (el.textContent || el.getAttribute('title') || el.getAttribute('aria-label') || '').trim();
+        if (/^Ask\s+(ieWorkspace\s+AI|Elixir)$/i.test(t)) {
+          el.style.setProperty('display', 'none', 'important');
         }
       }
     } catch (e) {}
@@ -774,21 +740,20 @@
     var doc = frameWin.document;
     if (doc.body.getAttribute('data-ie-rebrand') === '1') return;
     doc.body.setAttribute('data-ie-rebrand', '1');
+    disableLegacyWordAI(frameWin);
     rebrandSubtree(doc.body);
     upgradeNativeAiSettingsModal(doc, frameWin);
     attachRibbonTab(frameWin);
-    enhanceContextMenus(doc);
+    hideLegacyWordContextEntries(doc);
 
-    // Re-check context menu right after any right-click in Excel, Presentation, PDF, or Word
     doc.addEventListener('contextmenu', function () {
-      setTimeout(function () { enhanceContextMenus(doc); }, 30);
-      setTimeout(function () { enhanceContextMenus(doc); }, 120);
+      setTimeout(function () { hideLegacyWordContextEntries(doc); }, 30);
     }, true);
 
     // Click/tap anywhere on empty space outside quick AI popovers closes them immediately
     doc.addEventListener('pointerdown', function (e) {
       var target = e.target;
-      if (target && target.closest && (target.closest('#ie-ctx-ai-popover') || target.closest('.ie-ctx-ai-item') || target.closest('.elx-ask-menu'))) return;
+      if (target && target.closest && (target.closest('#ie-ctx-ai-popover') || target.closest('.elx-ask-menu'))) return;
       var inNativePop = false;
       var cur = target;
       for (var d = 0; d < 6 && cur && cur !== doc.body; d++) {
@@ -817,7 +782,7 @@
         upgradeNativeAiSettingsModal(doc, frameWin);
         attachRibbonTab(frameWin);
       }
-      if (added || styleChanged) enhanceContextMenus(doc);
+      if (added || styleChanged) hideLegacyWordContextEntries(doc);
     });
     mo.observe(doc.body, {
       childList: true,
@@ -1207,14 +1172,7 @@
     }
 
     function notifyNativeAI() {
-      try {
-        var fw = frameWin || getEditorFrameWin();
-        if (!fw) return;
-        fw.Common && fw.Common.NotificationCenter && fw.Common.NotificationCenter.trigger('elixir:ai-state', true);
-        var app = fw.DE || fw.SSE || fw.PE;
-        var ctrl = app && app.getController && app.getController('Common.Controllers.ElixirAI');
-        if (ctrl && ctrl.refreshState) ctrl.refreshState();
-      } catch (e) {}
+      disableLegacyWordAI(frameWin || getEditorFrameWin());
     }
 
     wrap.querySelector('#ie-bs-save').addEventListener('click', function () {
@@ -1447,6 +1405,7 @@
     var isEditor = /\/editor(\b|\?|#|$)/i.test(window.location.pathname) || !!document.getElementById('workspace');
     if (!isEditor || document.getElementById('ie-ai-fab')) return;
 
+    disableLegacyWordAI(null);
     handleOpenRouterCallback();
     injectStyles();
     startBackstageWatcher();
