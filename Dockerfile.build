@@ -71,6 +71,8 @@ ENV EXAMPLE_ENABLED=true \
 
 COPY deploy/server/example.json /etc/elixiroffice/documentserver-example/local-production-linux.json
 COPY deploy/render/ds-example.conf /etc/nginx/includes/ds-example.conf
+COPY deploy/render/starting.html /var/www/elixiroffice/ieworkspace-brand/starting.html
+COPY deploy/render/starting.html /var/www/elixiroffice/documentserver-example/welcome/example-disabled.html
 
 # 5. Force example service to autostart on port 3000 (prevents PaaS PORT=80/10000 from breaking upstream localhost:3000),
 #    and redirect root "/" directly to ieWorkspace Home (/example/) instead of /welcome/
